@@ -9,3 +9,4 @@
 7. Flex Grow: Opposite of flex shrink, The flex-grow property takes number as values The higher the number the more it will grow
 8. Flex Basis: It specifies the initial size of item and it processes before flex shrink and flex grow.
 9. Order Property: order property is used to position the elements in flex container.
+10. Self Alignment: This property is used by flex container items instead of flex container itself. It is used to align the item inside the flex container.
