@@ -8,3 +8,5 @@
 6. Anchor Element: element is used to link the user to another page, it is an inline element. I can also be used to link you to the elements of the pages using "id" attribute of elemnts.
 7. Unordered List: unorder list is used to list items such that there is no numbering on it.
 8. ordered List: ordered list is used to list items such that there is numbering on it.
+9. form: it is used to send an action on api with name attribute as key and values against required attributes.
+10. input: input can be of differnt type like text, radio, checkboxes used for getting text input, choosing one option out of several, choosing more than one option respectively.
