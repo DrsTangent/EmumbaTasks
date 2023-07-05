@@ -4,4 +4,5 @@
 2. paragraph: It is used for creating paragraphs and has much less importance as compare to that of headings.
 3. Commenting: It allows you to leave messages without affecting the brower display/output of the code.
 4. semantic elements: These elements gives meaning to its content for both browser and developers. It is pretty useful for SEO.
-5. Image: User can add image in browser using img tag.
+5. Image: User can add image in browser using img tag, It is an inline element which use src and alt as it's attributes.
+6. Anchor Element: element is used to link the user to another page, it is an inline element.
