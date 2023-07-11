@@ -7,7 +7,17 @@ var logger = require('morgan');
 require('dotenv').config();
 
 
-var usersRouter = require('./routes/users');
+const db = require("./src/models");
+//Using Force : True as 
+db.sequelize.sync({ force: true }) 
+  .then(() => {
+    console.log("Synced db.");
+  })
+  .catch((err) => {
+    console.log("Failed to sync db: " + err.message);
+  });
+
+var usersRouter = require('./src/routes/users');
 
 var app = express();
 
