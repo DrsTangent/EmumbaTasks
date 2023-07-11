@@ -7,7 +7,7 @@ var logger = require('morgan');
 require('dotenv').config();
 
 
-const db = require("./src/models");
+const db = require("./src/models/index.js");
 //Using Force : True as 
 db.sequelize.sync({ force: true }) 
   .then(() => {

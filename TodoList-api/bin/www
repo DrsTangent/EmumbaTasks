@@ -3,8 +3,6 @@
 /**
  * Module dependencies.
  */
-let s = Symbol('s');
-console.log(s.toSource());
 
 var app = require('../app');
 var debug = require('debug')('todolist-api:server');

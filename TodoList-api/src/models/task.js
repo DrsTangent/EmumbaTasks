@@ -1,9 +1,10 @@
 module.exports = (sequelize, Sequelize) => {
+    console.log(Sequelize.User);
     const Task = sequelize.define("task", {
       id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
-        autoIncrement: true
+        primaryKey: true,
+        autoIncrement: true,
       },
       title: {
         type: Sequelize.STRING,
@@ -12,34 +13,26 @@ module.exports = (sequelize, Sequelize) => {
       userID: {
         type: Sequelize.INTEGER,
         references: {
-            model: User,
+            model: 'Users',
             key: 'id'
         }
       },
       description: {
         type: Sequelize.STRING
       },
-      create_at: {
-        type: Sequelize.DATETIME,
-        defaultValue: Sequelize.NOW
-      },
-      updated_at: {
-        type: Sequelize.DATETIME,
-        defaultValue: Sequelize.NOW
-      },
-      due_time: {
-        type: Sequelize.DATETIME,
+      dueTime: {
+        type: Sequelize.DATE,
         allowNull: false
       },
-      file_path: {
-        type: Sequelize.STRING,
+      filePath: {
+        type: Sequelize.DATE,
       },
       completionStatus: {
         type: Sequelize.BOOLEAN,
         default: false
       },
       completionDate: {
-        type: Sequelize.DATETIME
+        type: Sequelize.DATE
       }
     });
   
