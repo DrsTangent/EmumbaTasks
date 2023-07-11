@@ -3,6 +3,8 @@
 /**
  * Module dependencies.
  */
+let s = Symbol('s');
+console.log(s.toSource());
 
 var app = require('../app');
 var debug = require('debug')('todolist-api:server');
@@ -11,7 +13,7 @@ var http = require('http');
 /**
  * Get port from environment and store in Express.
  */
-
+console.log(process.env.PORT)
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
 
