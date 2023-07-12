@@ -23,7 +23,16 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: false
       }
+    },
+    {
+        hooks: {
+            afterCreate: (instance) => {
+                delete instance.dataValues.hashedPassword;
+            },
+            afterUpdate: (instance) => {
+                delete instance.dataValues.hashedPassword;
+            }
+        }
     });
-  
     return User;
   };
