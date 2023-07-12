@@ -2,9 +2,12 @@ var express = require('express');
 var router = express.Router();
 var taskController = require('../controllers/taskController')
 var userController = require('../controllers/userController')
-/* GET users listing. */
-router.post('/createUser', userController.createUser);
 
+
+/*User Controller Handlers*/
+router.post('/signup', userController.signup);
+router.post('/signin', userController.signin);
+router.get('/getUsers', userController.getAllUsers);
 
 router.get('/createTask', taskController.createTask);
 
