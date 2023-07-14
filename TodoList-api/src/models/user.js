@@ -22,6 +22,10 @@ module.exports = (sequelize, Sequelize) => {
       hashedPassword: {
         type: Sequelize.STRING,
         allowNull: false
+      }, 
+      verified: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
       }
     },
     {

@@ -1,5 +1,4 @@
 module.exports = (sequelize, Sequelize) => {
-    console.log(Sequelize.User);
     const Task = sequelize.define("task", {
       id: {
         type: Sequelize.INTEGER,
