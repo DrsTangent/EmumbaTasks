@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const getToken = (payload) => {
-    return jwt.sign(payload, process.env.SESSION_SECRET3434, {
+    return jwt.sign(payload, process.env.SESSION_SECRET, {
       expiresIn: eval(process.env.SESSION_EXPIRY),
     })
 }

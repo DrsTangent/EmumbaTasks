@@ -10,7 +10,7 @@ router.post('/signin', userController.signin);
 router.get('/getUsers', userController.getAllUsers);
 router.post('/sendEmail', userController.sendVerificationEmail);
 router.get('/verifyEmail', userController.verifyEmail);
-router.post('/sendResetPassword', userController.sendResetPasswordEmail)
+router.post('/sendResetPasswordEmail', userController._sendResetPasswordEmail)
 router.post('/resetPassword', userController.resetPasssword);
 
 router.get('/createTask', taskController.createTask);

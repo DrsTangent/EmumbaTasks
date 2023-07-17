@@ -5,8 +5,8 @@ const Refresh_Token = db.refreshTokens;
 const Op = db.Sequelize.Op;
 const emailValidator = require('deep-email-validator');
 const {sendVerficationEmail, parseEmailVerificationToken} = require('../utils/emailVerfication');
+const {sendResetPasswordEmail, parseResetPasswordToken} = require('../utils/resetPassword');
 const { getToken, getRefreshToken } = require('../utils/authentication');
-const { parseResetPasswordToken } = require('../utils/resetPassword');
 
 const signup = async (req, res)=>{
 
@@ -166,7 +166,7 @@ const verifyEmail = async(req, res)=>{
     }
 }
 
-const sendResetPasswordEmail = async(req, res) => {
+const _sendResetPasswordEmail = async(req, res) => {
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -175,7 +175,7 @@ const sendResetPasswordEmail = async(req, res) => {
             }
         }).catch(error => {
             return res.status(500).send({
-                message: "Internal Server Error Occured while fetching users from database.", error
+                message: "Internal Server Error Occured while fetching users from database.", error:error.message||error
             })
         });
 
@@ -203,7 +203,7 @@ const sendResetPasswordEmail = async(req, res) => {
         catch(error){
             return res.status(500).send({
                 message: "Internal Server Error Occurred, Email Verfication was not sent to " + user.dataValues.email,
-                error
+                error:error.message||error
             })
         }
 
@@ -219,7 +219,7 @@ const sendResetPasswordEmail = async(req, res) => {
     }
     catch(error){
         return res.status(400).send({
-            message: "Bad Request", error
+            message: "Bad Request", error:error.message||error
         });
     }
 }
@@ -228,7 +228,7 @@ const resetPasssword = async(req, res)=>{
     try{
         let email = parseResetPasswordToken(req.query.token);
 
-        let newPassword = req.body.password();
+        let newPassword = req.body.password;
 
         let hashedPassword = generateHash(newPassword);
 
@@ -266,10 +266,10 @@ const resetPasssword = async(req, res)=>{
 
         return res.send(user);
     }
-    catch(err)
+    catch(error)
     {
         return res.status(400).send({
-            message: "Bad Request", error
+            message: "Bad Request", error: error.message||error
         });
     }
 }
@@ -376,4 +376,4 @@ const getSpecificUsers = async(req, res) => {
     let users 
 }
 
-module.exports = {signin, signup, profile, getAllUsers, sendVerificationEmail, verifyEmail, sendResetPasswordEmail, resetPasssword}
+module.exports = {signin, signup, profile, getAllUsers, sendVerificationEmail, verifyEmail, _sendResetPasswordEmail, resetPasssword}
