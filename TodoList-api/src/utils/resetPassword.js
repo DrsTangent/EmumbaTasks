@@ -17,11 +17,11 @@ function parseResetPasswordToken(jwtToken){
 
 async function sendResetPasswordEmail(email){
 
-    let emailToken = generateResetPasswordToken(email);
+    let resetPasswordToken = generateResetPasswordToken(email);
 
     let subject = "Reset Password of Emumba To Do List";
     
-    let emailBody = '<html><h2>Reset Passsword of Emumba To Do List</h2><p>Please, reset your password in emumba todo list using the given link</p><a href = "http://localhost:'+process.env.PORT+'/user/verifyEmail?token='+emailToken+'"><button>Verify Email</button></a></html>';
+    let emailBody = '<html><h2>Reset Passsword of Emumba To Do List</h2><p>Please, reset your password in emumba todo list using the given link</p><a href = "http://localhost:'+process.env.PORT+'/user/resetPassword?token='+resetPasswordToken+'"><button>Verify Email</button></a></html>';
 
     let response = await sendEmail(email, subject, emailBody);
 
