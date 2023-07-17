@@ -1,21 +1,24 @@
 const db = require('../models/index');
 const { comparePassword, generateHash } = require('../utils/passwordGeneration');
 const User = db.users;
+const Refresh_Token = db.refreshTokens;
 const Op = db.Sequelize.Op;
 const emailValidator = require('deep-email-validator');
-const {sendVerficationEmail} = require('../utils/emailVerfication');
+const {sendVerficationEmail, parseEmailVerificationToken} = require('../utils/emailVerfication');
+const { getToken, getRefreshToken } = require('../utils/authentication');
+const { parseResetPasswordToken } = require('../utils/resetPassword');
 
 const signup = async (req, res)=>{
 
     try{
         //Check if Email is valid or not
-        // if(!(await emailValidator.validate(req.body.email)).valid){
-        //     return res.status(400).send(
-        //         {
-        //             message: "Provided Email is not valid"
-        //         }
-        //     )
-        // }
+        if(!(await emailValidator.validate(req.body.email)).valid){
+            return res.status(400).send(
+                {
+                    message: "Provided Email is not valid"
+                }
+            )
+        }
 
         //Check if User Already Exists
         let user = await User.findOne({where: {
@@ -117,6 +120,161 @@ const sendVerificationEmail= async (req, res)=>{
     }
 }
 
+const verifyEmail = async(req, res)=>{
+    try{
+        let email = parseEmailVerificationToken(req.query.token);
+
+        let user = await User.findOne({
+            attributes: {exclude: ['hashedPassword']},
+            where: {
+                email: email
+            }
+        }).catch(error => {
+            return res.status(500).send({
+                message: "Internal Server Error Occured while fetching users from database.", error
+            })
+        });
+
+
+        if(!user)
+        {
+            return res.status(404).send({
+                message: "User with the given information doesn't exist"
+            })
+        }
+
+        
+        if(user.dataValues.verified){
+            return res.status(400).send({
+                message: "Bad Request, User is already verified", 
+                verfied: user.dataValues.verified
+            })
+        }
+
+        user.verified = true;
+
+        await user.save();
+        
+
+        return res.send(user);
+    }
+    catch(err)
+    {
+        return res.status(400).send({
+            message: "Bad Request", error
+        });
+    }
+}
+
+const sendResetPasswordEmail = async(req, res) => {
+    try{
+        let user = await User.findOne({
+            attributes: {exclude: ['hashedPassword']},
+            where: {
+                id: req.body.id
+            }
+        }).catch(error => {
+            return res.status(500).send({
+                message: "Internal Server Error Occured while fetching users from database.", error
+            })
+        });
+
+
+        if(!user)
+        {
+            return res.status(404).send({
+                message: "User with the given information doesn't exist"
+            })
+        }
+
+        
+        if(user.dataValues.verified){
+            return res.status(400).send({
+                message: "Bad Request, User is already verified", 
+                verfied: user.dataValues.verified
+            })
+        }
+
+        let emailResponse = null;
+
+        try{
+            emailResponse = await sendResetPasswordEmail(user.dataValues.email);
+        }
+        catch(error){
+            return res.status(500).send({
+                message: "Internal Server Error Occurred, Email Verfication was not sent to " + user.dataValues.email,
+                error
+            })
+        }
+
+        if(emailResponse.accepted.length == 0){
+            return res.status(500).send({
+                message: "Internal Server Error Occurred, Email Verfication was not sent to " + user.dataValues.email
+            });
+        }
+
+        return res.status(200).send({
+            message: "Reset Password Email has been send successfully"
+        });
+    }
+    catch(error){
+        return res.status(400).send({
+            message: "Bad Request", error
+        });
+    }
+}
+
+const resetPasssword = async(req, res)=>{
+    try{
+        let email = parseResetPasswordToken(req.query.token);
+
+        let newPassword = req.body.password();
+
+        let hashedPassword = generateHash(newPassword);
+
+        let user = await User.findOne({
+            attributes: {exclude: ['hashedPassword']},
+            where: {
+                email: email
+            }
+        }).catch(error => {
+            return res.status(500).send({
+                message: "Internal Server Error Occured while fetching users from database.", error
+            })
+        });
+
+
+        if(!user)
+        {
+            return res.status(404).send({
+                message: "User with the given information doesn't exist"
+            })
+        }
+
+        
+        if(user.dataValues.verified){
+            return res.status(400).send({
+                message: "Bad Request, User is already verified", 
+                verfied: user.dataValues.verified
+            })
+        }
+
+        user.hashedPassword = hashedPassword;
+
+        await user.save();
+        
+
+        return res.send(user);
+    }
+    catch(err)
+    {
+        return res.status(400).send({
+            message: "Bad Request", error
+        });
+    }
+}
+
+
 const getAllUsers = async (req, res) => {
     let users = await User.findAll({attributes: {exclude: ['hashedPassword']}}).catch(
         (error)=> {
@@ -170,6 +328,7 @@ const signin = async (req, res) => {
                 message: "Internal Server error occured while fetching user information", error 
             })
         });
+
         if(!user){
             return res.status(404).send({
                 message: "User with given email doesn't exist"
@@ -185,12 +344,28 @@ const signin = async (req, res) => {
         
         user.hashedPassword = undefined;
 
-        return res.send(user);
+        let payload = {
+            id: user.dataValues.id,
+            email: user.dataValues.emal
+        }
+
+        let token = getToken(payload);
+
+        let refreshToken = getRefreshToken(payload);
+
+
+        await Refresh_Token.create({userID: user.id, refreshToken}).catch(error => {
+            return res.status(500).send({
+                message: "Internal Server error occured while saving refresh token", error 
+            })
+        });
+
+        return res.send({user, token, refreshToken});
     }
     catch(error)
     {
         return res.status(400).send({
-            message: "Bad Request", error
+            message: "Bad Request", error: error.message
         });
     }
 }
@@ -201,4 +376,4 @@ const getSpecificUsers = async(req, res) => {
     let users 
 }
 
-module.exports = {signin, signup, profile, getAllUsers, sendVerificationEmail}
+module.exports = {signin, signup, profile, getAllUsers, sendVerificationEmail, verifyEmail, sendResetPasswordEmail, resetPasssword}

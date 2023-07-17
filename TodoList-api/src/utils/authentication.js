@@ -1,13 +1,13 @@
 const jwt = require("jsonwebtoken");
 
-const getToken = (user) => {
-    return jwt.sign(user, process.env.JWT_SECRET, {
+const getToken = (payload) => {
+    return jwt.sign(payload, process.env.SESSION_SECRET3434, {
       expiresIn: eval(process.env.SESSION_EXPIRY),
     })
 }
   
-const getRefreshToken = (user) => {
-    const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, {
+const getRefreshToken = (payload) => {
+    const refreshToken = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
       expiresIn: eval(process.env.REFRESH_TOKEN_EXPIRY),
     })
     return refreshToken
@@ -16,7 +16,7 @@ const getRefreshToken = (user) => {
 const getPayload = (req)=>{
       if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         let jwtToken = req.headers.authorization.split(' ')[1];
-        let payload = jwt.verify(jwtToken, process.env.JWT_SECRET);
+        let payload = jwt.verify(jwtToken, process.env.SESSION_SECRET);
         return payload
       }
       return null;

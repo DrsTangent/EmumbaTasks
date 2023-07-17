@@ -21,6 +21,6 @@ db.sequelize = sequelize;
 
 db.users = require("./user.js")(sequelize, Sequelize);
 db.tasks = require("./task.js")(sequelize, Sequelize);
-db.refreshToken = require("./refreshToken.js")(sequelize, Sequelize);
+db.refreshTokens = require("./refreshToken.js")(sequelize, Sequelize);
 
 module.exports = db;

@@ -8,11 +8,11 @@ function generateEmailVerificationToken(email){
             "email": email,
             "created": date.toString()
     }
-    return jwt.sign(mail, process.env.EMAIL_JWT_SECRET, { expiresIn: '1d' });
+    return jwt.sign(mail, process.env.EMAIL_VERIFICATION_TOKEN_SECRET, { expiresIn: eval(process.env.EMAIL_VERIFICATION_TOKEN_EXPIRY) });
 }
 
 function parseEmailVerificationToken(jwtToken){
-    let payload = jwt.verify(jwtToken, process.env.EMAIL_JWT_SECRET);
+    let payload = jwt.verify(jwtToken, process.env.EMAIL_VERIFICATION_TOKEN_SECRET);
     return payload.email;
 }
 
@@ -28,7 +28,5 @@ async function sendVerficationEmail(email){
 
     return response;
 }
-
-//<p>You requested for email verification, kindly use this <a href="http://localhost:3000/verify-email?token=' + token + '">link</a> to verify your email address</p>
 
 module.exports = {generateEmailVerificationToken, parseEmailVerificationToken, sendVerficationEmail}

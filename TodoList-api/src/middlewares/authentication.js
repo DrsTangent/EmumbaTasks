@@ -1,3 +1,5 @@
+const {getPayload} = require('../utils/authentication.js')
+
 const verifyUser = (req,res,next)=>{
     let payload = getPayload(req);
     if(payload){

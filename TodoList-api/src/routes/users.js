@@ -9,6 +9,7 @@ router.post('/signup', userController.signup);
 router.post('/signin', userController.signin);
 router.get('/getUsers', userController.getAllUsers);
 router.post('/sendEmail', userController.sendVerificationEmail);
+router.get('/verifyEmail', userController.verifyEmail);
 
 router.get('/createTask', taskController.createTask);
 
