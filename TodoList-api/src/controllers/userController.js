@@ -10,6 +10,7 @@ const {sendVerficationEmail, parseEmailVerificationToken} = require('../utils/em
 const {sendResetPasswordEmail, parseResetPasswordToken} = require('../utils/resetPassword');
 const { getToken, getRefreshToken, getFBAccessToken, getFacebookUserData } = require('../utils/authentication');
 const {messageResponse, dataResponse, errorResponse} = require('../utils/commonResponse');
+const cookieOptions = require('../../config/cookieConfig');
 const refreshToken = require('../models/refreshToken');
 const { response } = require('express');
 const axios = require("axios");
@@ -50,14 +51,18 @@ const signup = async (req, res,next)=>{
     try{
         let user_request = req.body.user;
         //Check if Email is valid or not
-        if(!(await emailValidator.validate(user_request.email)).valid){
-            throw new createError.BadRequest("Provided Email is not valid");
-        }
+        // let emailStatus = await emailValidator.validate(user_request.email).catch(error => {
+        //     throw new createError.InternalServerError(error);
+        // });
+
+        // if(!emailStatus.valid){
+        //     throw new createError.BadRequest("Provided Email is not valid");
+        // }
 
         //Check if User Already Exists
         let user = await User.findOne({where: {
                 email: {
-                    [Op.iLike] : user_request.email
+                    [Op.like] : user_request.email
                 }
         }}).catch(error => {
             throw new createError.InternalServerError(error);
@@ -91,7 +96,9 @@ const signup = async (req, res,next)=>{
             throw new createError.InternalServerError(error);
         });
 
-        return res.status(200).send(dataResponse("success", {token, refreshToken, user}))
+        res.cookie("refreshToken", refreshToken, cookieOptions);
+
+        return res.status(200).send(dataResponse("success", {token, user}))
     }
     catch(error){
         next(error);
@@ -110,7 +117,7 @@ Success Response:
     "message": "Reset Password Email has been sent successfully"
 }
 */
-const _sendResetPasswordEmail = async(req, res) => {
+const _sendResetPasswordEmail = async(req, res, next) => {
     try{
         let user_request = req.body.user;
 
@@ -166,7 +173,7 @@ Success Response:
     "message": "Your password has been reset successfully"
 }
 */
-const resetPasssword = async(req, res)=>{
+const resetPasssword = async(req, res, next)=>{
     try{
         let email = parseResetPasswordToken(req.query.token);
 
@@ -214,7 +221,8 @@ Success Response:
     "message": "Account Verifcation Email has been sent successfully"
 }
 */
-const sendVerificationEmail= async (req, res)=>{
+const sendVerificationEmail= async (req, res, next)=>{
+    console.log(req.body);
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -274,7 +282,7 @@ Success Response:
     }
 }
 */
-const verifyEmail = async(req, res)=>{
+const verifyEmail = async(req, res, next)=>{
     try{
         let email = parseEmailVerificationToken(req.query.token);
 
@@ -339,7 +347,7 @@ Success Response:
     
 }
 */
-const signin = async (req, res) => {
+const signin = async (req, res, next) => {
     try {
         let user_request = req.body.user;
         //Check if User Already Exists or not
@@ -376,7 +384,9 @@ const signin = async (req, res) => {
             throw new createError.InternalServerError(error);
         });
 
-        return res.send(dataResponse("success", {user, token, refreshToken}));
+        res.cookie("refreshToken", refreshToken, cookieOptions);
+
+        return res.send(dataResponse("success", {user, token}));
     }
     catch(error)
     {
@@ -405,7 +415,7 @@ Success Response:
     }
 }
 */
-const profile = async (req, res)=>{
+const profile = async (req, res, next)=>{
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -444,7 +454,7 @@ Response
     "message": "You've been logout successfully."
 }
 */
-const signout = async(req, res)=>{
+const signout = async(req, res, next)=>{
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -462,7 +472,7 @@ const signout = async(req, res)=>{
 
         let destroyedToken = await Refresh_Token.destroy({
             where:{
-                "refreshToken": req.body.refreshToken
+                "refreshToken": req.signedCookies.refreshToken
             }
         }).catch(error => {
             throw new createError.InternalServerError(error);
@@ -472,6 +482,9 @@ const signout = async(req, res)=>{
             throw new createError.NotFound("Provided refresh token doesn't exist");
         }
 
+
+        res.clearCookie("refreshToken");
+        
         return res.status(200).send(dataResponse("success", "You've been logged out successfully."));
     }
     catch(error){
@@ -571,7 +584,7 @@ Response:
     "token": String
 }
 */
-const refreshTokenCall = async(req, res)=>{
+const refreshTokenCall = async(req, res, next)=>{
     try {
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -607,6 +620,8 @@ const refreshTokenCall = async(req, res)=>{
             throw new createError.InternalServerError(error);
         })
 
+        res.cookie("refreshToken", refreshToken, cookieOptions);
+
         return res.send(dataResponse("success", {token, refreshToken}));
     }
     catch(error)
@@ -636,7 +651,7 @@ Response:
     }
 }
 */
-const deleteUser  = async (req, res)=>{
+const deleteUser  = async (req, res, next)=>{
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -708,7 +723,7 @@ Response
     }
 }
 */
-const updateUser = async(req, res)=>{
+const updateUser = async(req, res, next)=>{
     try{
         
         await User.update(req.body.user, {
@@ -725,7 +740,7 @@ const updateUser = async(req, res)=>{
     }
 }
 
-const setPassword = async(req, res)=>{
+const setPassword = async(req, res, next)=>{
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -779,7 +794,7 @@ Success Response:
     
 }
 */
-const addUser = async (req, res)=>{
+const addUser = async (req, res, next)=>{
 
     try{
         let user_request = req.body.user;
@@ -821,7 +836,7 @@ const addUser = async (req, res)=>{
     }
 }
 
-const oauthRedirect = async (req, res)=>{
+const oauthRedirect = async (req, res, next)=>{
     let details = await axios({
         method: "POST",
         url: `${process.env.GITHUB_URL}?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${req.query.code}`,
@@ -835,7 +850,7 @@ const oauthRedirect = async (req, res)=>{
 
 //https://www.facebook.com/v4.0/dialog/oauth?client_id=1211232373611138&redirect_uri=http://localhost:8080/users/facebookauth&scope=email
 
-const facebookOAuth = async (req, res)=>{
+const facebookOAuth = async (req, res, next)=>{
     try{
         let details = await getFBAccessToken(req.query.code).catch(
             error=>{

@@ -7,19 +7,6 @@ var {errorLogger, errorResponder, invalidPathHandler} = require('./src/middlewar
 
 require('dotenv').config();
 
-const queryString = require('query-string');
-
-const stringifiedParams = queryString.stringify({
-  client_id: '1211232373611138',
-  redirect_uri: 'http://localhost:8080/users/facebookauth',
-  scope: ['email'].join(','), // comma seperated string
-  response_type: 'code',
-  auth_type: 'rerequest',
-  display: 'popup',
-});
-
-const facebookLoginUrl = `https://www.facebook.com/v4.0/dialog/oauth?${stringifiedParams}`;
-console.log(facebookLoginUrl)
 
 const db = require("./src/models/index.js");
 //Using Force : True as 
@@ -42,7 +29,7 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.static(path.join(__dirname, 'public')));
 
 

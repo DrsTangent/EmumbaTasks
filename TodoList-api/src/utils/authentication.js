@@ -13,7 +13,7 @@ const getRefreshToken = (payload) => {
     })
     return refreshToken
 }
-  
+
 const getPayload = (req)=>{
       if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         let jwtToken = req.headers.authorization.split(' ')[1];
@@ -21,6 +21,15 @@ const getPayload = (req)=>{
         return payload
       }
       return null;
+}
+
+const getRefreshTokenPayload = (req)=>{
+  let refreshToken = req.signedCookies.refreshToken;
+  if(refreshToken){
+    let payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    return payload
+  }
+  return null;
 }
 
 
@@ -53,4 +62,4 @@ async function getFacebookUserData(accesstoken) {
   return data;
 };
 
-module.exports = {getToken, getRefreshToken, getPayload, getFBAccessToken, getFacebookUserData}
+module.exports = {getToken, getRefreshToken, getPayload, getFBAccessToken, getFacebookUserData, getRefreshTokenPayload}
