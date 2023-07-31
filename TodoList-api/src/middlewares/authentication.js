@@ -3,7 +3,7 @@ const {getPayload, getRefreshToken, getRefreshTokenPayload} = require('../utils/
 const verifyUser = (req,res,next)=>{
     let payload = getPayload(req);
     if(payload){
-        req.body.id = payload.id
+        req.body.user.id = payload.id
     }
     else{
       res.statusCode = 401;
@@ -14,9 +14,8 @@ const verifyUser = (req,res,next)=>{
 
 const verifyRefreshToken = (req, res, next)=>{
     let payload = getRefreshTokenPayload(req);
-    return res.send({"message": "OK"});
     if(payload){
-        req.body.id = payload.id
+        req.body.user.id = payload.id
     }
     else{
       res.statusCode = 401;
