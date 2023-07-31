@@ -731,6 +731,8 @@ Response
 */
 const updateUser = async(req, res, next)=>{
     try{
+        if(req.body.user.hashedPassword)
+            delete req.body.user.hashedPassword
         
         await User.update(req.body.user, {
             where: {
