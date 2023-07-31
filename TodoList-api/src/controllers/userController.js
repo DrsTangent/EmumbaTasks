@@ -32,7 +32,6 @@ Success Response:
     "status": "success",
     "data":{
         "token": String,
-        "refreshToken": String,
         "user": {
         "taskNo": Number,
         "verified": Boolean,
@@ -45,6 +44,7 @@ Success Response:
     }
     
 }
+Refresh Token In Cookies
 */
 const signup = async (req, res,next)=>{
 
@@ -320,6 +320,8 @@ const verifyEmail = async(req, res, next)=>{
 }
 
 /*
+Sign in
+
 Request: 
 {
     "user":{
@@ -333,7 +335,6 @@ Success Response:
     "status": "success",
     "data":{
         "token": String,
-        "refreshToken": String,
         "user": {
         "taskNo": Number,
         "verified": Boolean,
@@ -346,6 +347,7 @@ Success Response:
     }
     
 }
+Refresh Token in Cookies
 */
 const signin = async (req, res, next) => {
     try {
@@ -444,10 +446,9 @@ const profile = async (req, res, next)=>{
 Sign Out
 
 Request
-Brear Authentication Token in Header
-{
-    "refreshToken": String
-}
+Brear Authentication Token in Header (for ID)
+Refresh Token in Cookies for Deleting it from Database and Cookies.
+
 Response
 {
     "status": "success",
@@ -493,6 +494,8 @@ const signout = async(req, res, next)=>{
 }
 
 /*
+Get All Users
+
 Request
 
 Response:
@@ -529,6 +532,8 @@ const getAllUsers = async (req, res, next) => {
 }
 
 /*
+Get Specific User
+
 Request
 Params =>
 /users/:id
@@ -572,17 +577,16 @@ const getSpecificUser  = async (req, res, next)=>{
 }
 
 /*
+Refresh Token CCall
 Request:
 Authentication Token in Header
-{
-    "refreshToken": String
-}
+Refresh Token in Cookie
 
 Response:
 {
-    "refreshToken": String
     "token": String
 }
+refreshToken in Cookie
 */
 const refreshTokenCall = async(req, res, next)=>{
     try {
@@ -622,7 +626,7 @@ const refreshTokenCall = async(req, res, next)=>{
 
         res.cookie("refreshToken", refreshToken, cookieOptions);
 
-        return res.send(dataResponse("success", {token, refreshToken}));
+        return res.send(dataResponse("success", {token}));
     }
     catch(error)
     {
@@ -630,8 +634,8 @@ const refreshTokenCall = async(req, res, next)=>{
     }
 }
 
-
 /*
+Delete User
 Request
 Params =>
 /users/:id
@@ -695,6 +699,8 @@ const deleteUser  = async (req, res, next)=>{
 }
 
 /*
+Update User
+
 Request
 {
     "user":{
@@ -740,6 +746,21 @@ const updateUser = async(req, res, next)=>{
     }
 }
 
+/*
+
+Request:
+JWT Header Token For Authentication
+{
+    "oldpassword": String,
+    "newpassword": String
+}
+
+Success Response:
+{
+    status: "success",
+    message: "Your Password has been changed successfully"
+}
+*/
 const setPassword = async(req, res, next)=>{
     try{
         let user = await User.findOne({
@@ -758,7 +779,7 @@ const setPassword = async(req, res, next)=>{
 
 
 
-        return res.status(200).send(dataResponse("success", {user}));
+        return res.status(200).send(messageResponse("success", "Your Password has been changed successfully"));
     }
     catch(error){
         next(error)
@@ -766,7 +787,7 @@ const setPassword = async(req, res, next)=>{
 }
 
 /*
-Sign Up
+Add User
 
 Request: 
 {
