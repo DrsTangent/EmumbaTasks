@@ -227,7 +227,7 @@ const sendVerificationEmail= async (req, res, next)=>{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
             where: {
-                id: req.body.id
+                id: req.body.user.id
             }
         }).catch(error => {
             throw new createError.InternalServerError(error);
@@ -422,7 +422,7 @@ const profile = async (req, res, next)=>{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
             where: {
-                id: req.body.id
+                id: req.body.user.id
             }
         }).catch(error => {
             throw new createError.InternalServerError(error);
@@ -460,7 +460,7 @@ const signout = async(req, res, next)=>{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
             where: {
-                id: req.body.id
+                id: req.body.user.id
             }
         }).catch(error => {
             throw new createError.InternalServerError(error);
@@ -593,7 +593,7 @@ const refreshTokenCall = async(req, res, next)=>{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
             where: {
-                id: req.body.id
+                id: req.body.user.id
             }
         }).catch(error => {
             throw new createError.InternalServerError(error);
@@ -768,7 +768,7 @@ const setPassword = async(req, res, next)=>{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
             where: {
-                id: req.body.id
+                id: req.body.user.id
             }
         }).catch(error => {
             throw new createError.InternalServerError(error);
