@@ -2,15 +2,28 @@ const db = require('../models/index');
 const Task = db.tasks;
 const Op = db.Sequelize.Op;
 
-function createTask(req, res){
-    Task.create(req.body).then(
-        data=>{
-            res.send(data);
-        }
-    ).catch(err=>{
-        console.log(err);
-        res.status(500).send('Error in Server');
-    })
+function create(req, res){
+    
 }
 
-module.exports = {createTask}
+function view(req, res){
+
+}
+
+function edit(req, res){
+
+}
+
+function update(req, res){
+
+}
+
+function destroy(req, res){
+
+}
+
+function attachment(req, res){
+
+}
+
+module.exports = {create, view, edit, update, destroy, attachment}
