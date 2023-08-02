@@ -3,7 +3,6 @@ const errLogger = require("../logging/logger").errorLogger;
 
 //Error with no status code.
 const assignHTTPError = (error, req, res, next)=>{
-    console.log(error.status);
     if(!error.status){
         error.status = 400;
     }
@@ -17,8 +16,6 @@ const assignHTTPError = (error, req, res, next)=>{
     }
 
     error.message = error.message || "The provided information is not correct to execute the given details."
-
-    console.log(error.status);
 
     next(error);
 }
