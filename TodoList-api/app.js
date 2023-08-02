@@ -2,7 +2,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var {errorLogger, errorResponder, invalidPathHandler} = require('./src/middlewares/errorhandling');
+var {errorLogger, errorResponder, invalidPathHandler, assignHTTPError} = require('./src/middlewares/errorhandling');
 
 
 require('dotenv').config();
@@ -34,6 +34,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 app.use('/users', usersRouter);
+
+
+//Assign Errors to Code
+app.use(assignHTTPError);
 
 // Attach the first Error handling Middleware
 // function defined above (which logs the error)
