@@ -1,7 +1,9 @@
 const { errorResponse } = require("../utils/commonResponse");
+const errLogger = require("../logging/logger").errorLogger;
 
 //Error with no status code.
-const assignHTTPError = (error, res, res, next)=>{
+const assignHTTPError = (error, req, res, next)=>{
+    console.log(error.status);
     if(!error.status){
         error.status = 400;
     }
@@ -11,18 +13,35 @@ const assignHTTPError = (error, res, res, next)=>{
     }
     else{
         error.name = error.name.replace(/([A-Z])/g, " $1");
-        error.name = error.slice(1);
+        error.name = error.name.slice(1);
     }
 
-    error.message = error.message || "The provided information is not correct to execute the given "
+    error.message = error.message || "The provided information is not correct to execute the given details."
+
+    console.log(error.status);
 
     next(error);
 }
 
 // Error handling Middleware function for logging the error message
 const errorLogger = (error, req, res, next) => {
-    console.log(error.stack);
-    console.log( `error ${error.message || "There is no error message"}`) 
+    errorStatus= error.status;
+    errorName = error.name;
+    functionReference = error.stack.split(/\n[\s\t]*/)[1].slice(3);
+    requestPath = req.originalUrl
+    requestMethod = req.method
+    message = error.message
+
+    errLogger.error(message, {
+        errorStatus,
+        errorName,
+        functionReference,
+        requestPath,
+        requestMethod
+    })
+    
+    console.log(error.status);
+
     next(error) // calling next middleware
 }
   
