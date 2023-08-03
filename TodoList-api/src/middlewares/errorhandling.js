@@ -22,19 +22,21 @@ const assignHTTPError = (error, req, res, next)=>{
 
 // Error handling Middleware function for logging the error message
 const errorLogger = (error, req, res, next) => {
-    errorStatus= error.status;
-    errorName = error.name;
-    functionReference = error.stack.split(/\n[\s\t]*/)[1].slice(3);
-    requestPath = req.originalUrl
-    requestMethod = req.method
-    message = error.message
+    let errorStatus= error.status;
+    let errorName = error.name;
+    let functionReference = error.stack.split(/\n[\s\t]*/)[1].slice(3);
+    let requestPath = req.originalUrl
+    let requestMethod = req.method
+    let message = error.message
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
 
     errLogger.error(message, {
         errorStatus,
         errorName,
         functionReference,
         requestPath,
-        requestMethod
+        requestMethod,
+        ip
     })
     
     console.log(error.status);
