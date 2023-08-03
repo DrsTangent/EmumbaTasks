@@ -4,15 +4,15 @@ const { comparePassword, generateHash } = require('../utils/passwordGeneration')
 const User = db.users;
 const Refresh_Token = db.refreshTokens;
 const Task = db.tasks;
+const Local_Strategy=db.localStrategy;
+const Oauth_Strategy=db.oauthStrategy;
 const Op = db.Sequelize.Op;
 const emailValidator = require('deep-email-validator');
 const {sendVerficationEmail, parseEmailVerificationToken} = require('../utils/emailVerfication');
 const {sendResetPasswordEmail, parseResetPasswordToken} = require('../utils/resetPassword');
 const { getToken, getRefreshToken, getFBAccessToken, getFacebookUserData } = require('../utils/authentication');
-const {messageResponse, dataResponse, errorResponse} = require('../utils/commonResponse');
+const {messageResponse, dataResponse} = require('../utils/commonResponse');
 const cookieOptions = require('../../config/cookieConfig');
-const refreshToken = require('../models/refreshToken');
-const { response } = require('express');
 const axios = require("axios");
 
 /*
@@ -76,15 +76,21 @@ const signup = async (req, res,next)=>{
 
         user_request.hashedPassword = generateHash(user_request.password);
 
+        user_request.authStrategy = "local";
 
 
-        user = await User.create(user_request, {fields: ['name', 'email', 'hashedPassword']}).catch(error => {
+        user = await User.create(user_request, {fields: ['name', 'email', 'authStrategy']}).catch(error => {
+            throw new createError.InternalServerError(error);
+        });
+
+        await Local_Strategy.create({userID: user.id, hashedPassword: user_request.hashedPassword}).catch(error => {
             throw new createError.InternalServerError(error);
         });
 
         let payload = {
             id: user.dataValues.id,
-            email: user.dataValues.emal
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
         }
 
         let token = getToken(payload);
@@ -122,7 +128,6 @@ const _sendResetPasswordEmail = async(req, res, next) => {
         let user_request = req.body.user;
 
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 email: user_request.email
             }
@@ -136,21 +141,15 @@ const _sendResetPasswordEmail = async(req, res, next) => {
             throw new createError.NotFound("User with the given information doesn't exist")
         }
 
-        
-        if(user.dataValues.verified){
-            throw new createError.BadRequest("User is already verified");
-        }
-
         let emailResponse =  await sendResetPasswordEmail(user.dataValues.email).catch((error)=>{
             throw new createError.InternalServerError(error);
         })
 
         if(emailResponse.accepted.length == 0){
-            throw new createError.InternalServerError("Verification Email couldn't be sent to targetted email");
+            throw new createError.InternalServerError("Reset Password Email couldn't be sent to targetted email");
         }
 
-        return res.status(200).send(
-            messageResponse("success", "Reset Password Email has been sent successfully"));
+        return res.status(200).send(messageResponse("success", "Reset Password Email has been sent successfully"));
     }
     catch(error){
         next(error);
@@ -182,7 +181,6 @@ const resetPasssword = async(req, res, next)=>{
         let hashedPassword = generateHash(newPassword);
 
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 email: email
             }
@@ -196,10 +194,11 @@ const resetPasssword = async(req, res, next)=>{
             throw new createError.NotFound("User with given details doesn't exist");
         }
 
-        user.hashedPassword = hashedPassword;
-
-        await user.save();
-        
+        await Local_Strategy.update({hashedPassword: hashedPassword}, {
+            where: {
+                userID: user.id
+            }
+        })
 
         return res.send(messageResponse("success", "Your password has been reset successfully"));
     }
@@ -222,7 +221,6 @@ Success Response:
 }
 */
 const sendVerificationEmail= async (req, res, next)=>{
-    console.log(req.body);
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -287,7 +285,6 @@ const verifyEmail = async(req, res, next)=>{
         let email = parseEmailVerificationToken(req.query.token);
 
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 email: email
             }
@@ -365,22 +362,28 @@ const signin = async (req, res, next) => {
             throw new createError.NotFound("User with given email doesn't exist");
         }
         //Check if Password Matches//
-        let isMatch = comparePassword(user_request.password, user.hashedPassword);
+
+        let {hashedPassword} = await Local_Strategy.findOne({where: {
+            userID: user.id
+        }}).catch((error)=>{
+            throw new createError.InternalServerError(error);
+        })
+
+        let isMatch = comparePassword(user_request.password, hashedPassword);
+
         if(!isMatch){
             throw new createError.Unauthorized("Please provide correct credentials to login");
         }
-        
-        user.hashedPassword = undefined;
 
         let payload = {
             id: user.dataValues.id,
-            email: user.dataValues.emal
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
         }
 
         let token = getToken(payload);
 
         let refreshToken = getRefreshToken(payload);
-
 
         await Refresh_Token.create({userID: user.id, refreshToken}).catch(error => {
             throw new createError.InternalServerError(error);
@@ -420,7 +423,6 @@ Success Response:
 const profile = async (req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
@@ -432,8 +434,6 @@ const profile = async (req, res, next)=>{
         {
             throw new createError.NotFound("User with the given details doesn't exist");
         }
-
-        next();
 
         return res.status(200).send(dataResponse("success", {user}));
     }
@@ -458,7 +458,6 @@ Response
 const signout = async(req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
@@ -518,7 +517,7 @@ Response:
 const getAllUsers = async (req, res, next) => {
     try
     {
-        let users = await User.findAll({attributes: {exclude: ['hashedPassword']}}).catch(
+        let users = await User.findAll().catch(
             (error)=> {
                 throw new createError.InternalServerError(error);
             }
@@ -556,7 +555,6 @@ Response:
 const getSpecificUser  = async (req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.params.id
             }
@@ -591,7 +589,6 @@ refreshToken in Cookie
 const refreshTokenCall = async(req, res, next)=>{
     try {
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
@@ -606,7 +603,8 @@ const refreshTokenCall = async(req, res, next)=>{
 
         let payload = {
             id: user.dataValues.id,
-            email: user.dataValues.emal
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
         }
 
         let token = getToken(payload);
@@ -658,7 +656,6 @@ Response:
 const deleteUser  = async (req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.params.id
             }
@@ -766,7 +763,6 @@ Success Response:
 const setPassword = async(req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
@@ -839,16 +835,20 @@ const addUser = async (req, res, next)=>{
         }
 
 
-        user_request.hashedPassword = generateHash(user_request.password);
+        let hashedPassword = generateHash(user_request.password);
 
         try{
-            user =await User.create(user_request, {fields: ['name', 'email', 'hashedPassword']})
+            user =await User.create(user_request, {fields: ['name', 'email']})
         }
         catch(error){
             throw new createError.InternalServerError(error);
         }
 
-        user = await User.create(user_request, {fields: ['name', 'email', 'hashedPassword']}).catch(error => {
+        user = await User.create(user_request, {fields: ['name', 'email']}).catch(error => {
+            throw new createError.InternalServerError(error);
+        });
+
+        await Local_Strategy.create({userID: user.id, hashedPassword: hashedPassword}).catch(error => {
             throw new createError.InternalServerError(error);
         });
 
@@ -875,16 +875,71 @@ const oauthRedirect = async (req, res, next)=>{
 
 const facebookOAuth = async (req, res, next)=>{
     try{
-        let details = await getFBAccessToken(req.query.code).catch(
+        
+        let accessToken = await getFBAccessToken(req.query.code).catch(
             error=>{
                 throw new createError.InternalServerError(error);
             }
         );
-        console.log(details);
     
-        let userInformation = await getFacebookUserData(details)
-    
-        res.send({userInformation});
+        let {email, first_name, last_name} = await getFacebookUserData(accessToken).catch(
+            error=>{
+                throw new createError.InternalServerError(error);
+            }
+        )
+
+        let name = [first_name, last_name].join(" ");
+
+        //Check if User Already Exists
+        let user = await User.findOne({where: {
+                email: {
+                    [Op.like] : email
+                }
+        }}).catch(error => {
+            throw new createError.InternalServerError(error);
+        }
+        );
+
+        if(!user){
+            user = await User.create({name, email, authStrategy: "oauth"}).catch(
+                (error)=>{
+                    throw new createError.InternalServerError(error);
+                }
+            )
+
+            await Oauth_Strategy.create({userID: user.id, accessToken: accessToken}).catch(error => {
+                throw new createError.InternalServerError(error);
+            });
+        }
+        else{
+            await Oauth_Strategy.update({accessToken: accessToken}, {where: {
+                userID: user.id, 
+            }}).catch(error => {
+                throw new createError.InternalServerError(error);
+            });
+        }
+        
+
+        let payload = {
+            id: user.dataValues.id,
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
+        }
+
+        let token = getToken(payload);
+
+        let refreshToken = getRefreshToken(payload);
+
+
+        await Refresh_Token.create({userID: user.id, refreshToken}).catch(error => {
+            throw new createError.InternalServerError(error);
+        });
+
+        res.cookie("refreshToken", refreshToken, cookieOptions);
+
+        return res.status(200).send(dataResponse("success", {token, user}))
+
+
     }
     catch(error){
         next(error);

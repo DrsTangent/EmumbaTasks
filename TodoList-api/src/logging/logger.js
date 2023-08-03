@@ -65,7 +65,8 @@ infoLogger.stream = {
 //Error Logger Using Winston//
 const errorLogger = winston.createLogger({
     transports: [
-      new winston.transports.File(options.error)
+      new winston.transports.File(options.error),
+      new winston.transports.Console(options.error)
     ],
     exitOnError: false, // do not exit on handled exceptions
 });

@@ -12,7 +12,7 @@ router.get('/verifyEmail', userController.verifyEmail);
 router.post('/sendResetPasswordEmail', userController._sendResetPasswordEmail)
 router.post('/resetPassword', userController.resetPasssword);
 router.post('/setPassword', verifyUser, userController.setPassword);
-router.get('/me', verifyUser, userController.profile);
+router.get('/myprofile', verifyUser, userController.profile);
 router.post('/signout', verifyUser, userController.signout);
 router.get('/refreshTokenCall', verifyRefreshToken, userController.refreshTokenCall);
 //3rd Party Authentication// Getting Information But not Setting In Model Yet.

@@ -1,7 +1,7 @@
 module.exports = (sequelize, Sequelize) => {
     const Oauth_Strategy = sequelize.define("oauthStrategy", {
       accessToken: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT,
         allowNull: false
       },
       userID: {

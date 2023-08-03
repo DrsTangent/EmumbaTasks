@@ -27,7 +27,7 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.STRING,
         allowNull: false,
         validate: {
-          is: ["local", "oauth"]
+          is: /^(oauth|local)$/
         }
       }
     });
