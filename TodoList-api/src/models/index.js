@@ -22,5 +22,7 @@ db.sequelize = sequelize;
 db.users = require("./user.js")(sequelize, Sequelize);
 db.tasks = require("./task.js")(sequelize, Sequelize);
 db.refreshTokens = require("./refreshToken.js")(sequelize, Sequelize);
+db.oauthStrategy = require("./oauthStrategy.js")(sequelize, Sequelize);
+db.localStrategy = require("./localStrategy.js")(sequelize, Sequelize);
 
 module.exports = db;
