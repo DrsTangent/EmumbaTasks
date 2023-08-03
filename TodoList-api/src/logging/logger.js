@@ -31,7 +31,7 @@ const options = {
       maxFiles: 5,
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.json()
+        winston.format.prettyPrint()
       ),
     },
     console: {
