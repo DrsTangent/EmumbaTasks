@@ -1,4 +1,23 @@
+const createHttpError = require('http-errors')
 const {getPayload, getRefreshTokenPayload} = require('../utils/authentication.js')
+
+const verifyLocalStrategy = (req, res, next) =>{
+  if(!req.body.user.authStrategy == "local")
+  {
+    throw new createHttpError.MethodNotAllowed("Given functionality can only be used in Local Authentication Strategy");
+  }
+  
+  next()
+}
+
+const verifyOauthStrategy = (req, res, next) => {
+  if(!req.body.user.authStrategy == "local")
+  {
+    throw new createHttpError.MethodNotAllowed("Given functionality can only be used in Open Authentication Strategy");
+  }
+  
+  next()
+}
 
 const verifyUser = (req,res,next)=>{
     // Check if req.body.user exists, create it if it doesn't
@@ -10,6 +29,7 @@ const verifyUser = (req,res,next)=>{
     
     if(payload){
         req.body.user.id = payload.id
+        req.body.user.authStrategy = payload.authStrategy
     }
     else{
       res.statusCode = 401;
@@ -36,4 +56,4 @@ const verifyRefreshToken = (req, res, next)=>{
     next()
 }
 
-module.exports = {verifyUser, verifyRefreshToken}
+module.exports = {verifyUser, verifyRefreshToken, verifyOauthStrategy, verifyLocalStrategy}

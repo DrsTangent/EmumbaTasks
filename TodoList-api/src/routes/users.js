@@ -2,16 +2,16 @@ var express = require('express');
 var router = express.Router();
 var taskController = require('../controllers/taskController')
 var userController = require('../controllers/userController')
-const {verifyUser, verifyRefreshToken} = require('../middlewares/authentication')
+const {verifyUser, verifyRefreshToken, verifyLocalStrategy} = require('../middlewares/authentication')
 
 /*User Controller Handlers*/
 router.post('/signup', userController.signup);
 router.post('/signin', userController.signin);
-router.get('/sendEmail', verifyUser, userController.sendVerificationEmail);
+router.get('/sendEmail', verifyUser, verifyLocalStrategy, userController.sendVerificationEmail);
 router.get('/verifyEmail', userController.verifyEmail);
 router.post('/sendResetPasswordEmail', userController._sendResetPasswordEmail)
 router.post('/resetPassword', userController.resetPasssword);
-router.post('/setPassword', verifyUser, userController.setPassword);
+router.post('/setPassword', verifyUser, verifyLocalStrategy, userController.setPassword);
 router.get('/myprofile', verifyUser, userController.profile);
 router.post('/signout', verifyUser, userController.signout);
 router.get('/refreshTokenCall', verifyRefreshToken, userController.refreshTokenCall);
