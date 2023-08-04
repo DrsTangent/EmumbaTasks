@@ -30,6 +30,8 @@ const errorLogger = (error, req, res, next) => {
     let message = error.message
     let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress
 
+    console.log(error.stack);
+    
     errLogger.error(message, {
         errorStatus,
         errorName,
