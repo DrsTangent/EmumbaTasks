@@ -16,8 +16,12 @@ router.get('/myprofile', verifyUser, userController.profile);
 router.post('/signout', verifyUser, userController.signout);
 router.get('/refreshTokenCall', verifyRefreshToken, userController.refreshTokenCall);
 //3rd Party Authentication// Getting Information But not Setting In Model Yet.
-router.get('/oauth-redirect/', userController.oauthRedirect);
+//router.get('/oauth-redirect/', userController.oauthRedirect);
 router.get('/facebookauth', userController.facebookOAuth);
+
+/*Task Controller Handler*/
+router.post('/tasks', verifyUser, taskController.createTask);
+
 
 /*Unused Handlers are given below*/
 //router.get('/getUsers', userController.getAllUsers);
