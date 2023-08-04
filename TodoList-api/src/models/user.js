@@ -19,24 +19,17 @@ module.exports = (sequelize, Sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
-      hashedPassword: {
-        type: Sequelize.STRING,
-        allowNull: false
-      }, 
       verified: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
-      }
-    },
-    {
-        hooks: {
-            afterCreate: (instance) => {
-                delete instance.dataValues.hashedPassword;
-            },
-            afterUpdate: (instance) => {
-                delete instance.dataValues.hashedPassword;
-            }
+      },
+      authStrategy: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        validate: {
+          is: /^(oauth|local)$/
         }
+      }
     });
     return User;
   };

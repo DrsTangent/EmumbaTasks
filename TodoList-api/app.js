@@ -1,8 +1,9 @@
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var {errorLogger, errorResponder, invalidPathHandler} = require('./src/middlewares/errorhandling');
+var morgan = require('morgan');
+var {infoLogger} = require('./src/logging/logger');
+var {errorLogger, errorResponder, invalidPathHandler, assignHTTPError} = require('./src/middlewares/errorhandling');
 
 
 require('dotenv').config();
@@ -10,7 +11,7 @@ require('dotenv').config();
 
 const db = require("./src/models/index.js");
 //Using Force : True as 
-db.sequelize.sync({ force: true }) 
+db.sequelize.sync() 
   .then(() => {
     console.log("Synced db.");
   })
@@ -26,7 +27,7 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(logger('dev'));
+app.use(morgan('combined', {stream: infoLogger.stream}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
@@ -34,6 +35,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 app.use('/users', usersRouter);
+
+
+//Assign Errors to Code
+app.use(assignHTTPError);
 
 // Attach the first Error handling Middleware
 // function defined above (which logs the error)

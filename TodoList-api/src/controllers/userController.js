@@ -1,18 +1,18 @@
 const db = require('../models/index');
-const createError = require('http-errors');
+const createHttpError = require('http-errors');
 const { comparePassword, generateHash } = require('../utils/passwordGeneration');
 const User = db.users;
 const Refresh_Token = db.refreshTokens;
 const Task = db.tasks;
+const Local_Strategy=db.localStrategy;
+const Oauth_Strategy=db.oauthStrategy;
 const Op = db.Sequelize.Op;
 const emailValidator = require('deep-email-validator');
 const {sendVerficationEmail, parseEmailVerificationToken} = require('../utils/emailVerfication');
 const {sendResetPasswordEmail, parseResetPasswordToken} = require('../utils/resetPassword');
 const { getToken, getRefreshToken, getFBAccessToken, getFacebookUserData } = require('../utils/authentication');
-const {messageResponse, dataResponse, errorResponse} = require('../utils/commonResponse');
+const {messageResponse, dataResponse} = require('../utils/commonResponse');
 const cookieOptions = require('../../config/cookieConfig');
-const refreshToken = require('../models/refreshToken');
-const { response } = require('express');
 const axios = require("axios");
 
 /*
@@ -52,11 +52,11 @@ const signup = async (req, res,next)=>{
         let user_request = req.body.user;
         //Check if Email is valid or not
         // let emailStatus = await emailValidator.validate(user_request.email).catch(error => {
-        //     throw new createError.InternalServerError(error);
+        //     throw new createHttpError.InternalServerError(error);
         // });
 
         // if(!emailStatus.valid){
-        //     throw new createError.BadRequest("Provided Email is not valid");
+        //     throw new createHttpError.BadRequest("Provided Email is not valid");
         // }
 
         //Check if User Already Exists
@@ -65,26 +65,32 @@ const signup = async (req, res,next)=>{
                     [Op.like] : user_request.email
                 }
         }}).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         }
         );
 
         if(user){
-            throw new createError.Conflict("User with current email already exists");
+            throw new createHttpError.Conflict("User with current email already exists");
         }
 
 
         user_request.hashedPassword = generateHash(user_request.password);
 
+        user_request.authStrategy = "local";
 
 
-        user = await User.create(user_request, {fields: ['name', 'email', 'hashedPassword']}).catch(error => {
-            throw new createError.InternalServerError(error);
+        user = await User.create(user_request, {fields: ['name', 'email', 'authStrategy']}).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        });
+
+        await Local_Strategy.create({userID: user.id, hashedPassword: user_request.hashedPassword}).catch(error => {
+            throw new createHttpError.InternalServerError(error);
         });
 
         let payload = {
             id: user.dataValues.id,
-            email: user.dataValues.emal
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
         }
 
         let token = getToken(payload);
@@ -93,7 +99,7 @@ const signup = async (req, res,next)=>{
 
 
         await Refresh_Token.create({userID: user.id, refreshToken}).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         res.cookie("refreshToken", refreshToken, cookieOptions);
@@ -122,35 +128,32 @@ const _sendResetPasswordEmail = async(req, res, next) => {
         let user_request = req.body.user;
 
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 email: user_request.email
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
 
         if(!user)
         {
-            throw new createError.NotFound("User with the given information doesn't exist")
+            throw new createHttpError.NotFound("User with the given information doesn't exist")
         }
 
-        
-        if(user.dataValues.verified){
-            throw new createError.BadRequest("User is already verified");
+        if(user.dataValues.authStrategy != "local"){
+            throw new createHttpError.BadRequest("Given user is not using local authentication");
         }
 
         let emailResponse =  await sendResetPasswordEmail(user.dataValues.email).catch((error)=>{
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         })
 
         if(emailResponse.accepted.length == 0){
-            throw new createError.InternalServerError("Verification Email couldn't be sent to targetted email");
+            throw new createHttpError.InternalServerError("Reset Password Email couldn't be sent to targetted email");
         }
 
-        return res.status(200).send(
-            messageResponse("success", "Reset Password Email has been sent successfully"));
+        return res.status(200).send(messageResponse("success", "Reset Password Email has been sent successfully"));
     }
     catch(error){
         next(error);
@@ -182,24 +185,28 @@ const resetPasssword = async(req, res, next)=>{
         let hashedPassword = generateHash(newPassword);
 
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 email: email
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
 
         if(!user)
         {
-            throw new createError.NotFound("User with given details doesn't exist");
+            throw new createHttpError.NotFound("User with given details doesn't exist");
         }
 
-        user.hashedPassword = hashedPassword;
+        if(user.dataValues.authStrategy != "local"){
+            throw new createHttpError.BadRequest("Given user is not using local authentication");
+        }
 
-        await user.save();
-        
+        await Local_Strategy.update({hashedPassword: hashedPassword}, {
+            where: {
+                userID: user.id
+            }
+        })
 
         return res.send(messageResponse("success", "Your password has been reset successfully"));
     }
@@ -222,7 +229,6 @@ Success Response:
 }
 */
 const sendVerificationEmail= async (req, res, next)=>{
-    console.log(req.body);
     try{
         let user = await User.findOne({
             attributes: {exclude: ['hashedPassword']},
@@ -230,26 +236,29 @@ const sendVerificationEmail= async (req, res, next)=>{
                 id: req.body.user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
 
         if(!user)
         {
-            throw new createError.NotFound("User with the given details doesn't exist");
+            throw new createHttpError.NotFound("User with the given details doesn't exist");
         }
 
-        
+        if(user.dataValues.authStrategy != "local"){
+            throw new createHttpError.BadRequest("Given user is not using local authentication");
+        }
+
         if(user.dataValues.verified){
-            throw new createError.Conflict("User with current email is already verified");
+            throw new createHttpError.Conflict("User with current email is already verified");
         }
 
         let emailResponse = await sendVerficationEmail(user.dataValues.email).catch(error=>{
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(emailResponse.accepted.length == 0){
-            throw new createError.InternalServerError("Email couldn't be send to targetted email id");
+            throw new createHttpError.InternalServerError("Email couldn't be send to targetted email id");
         }
 
         return res.status(200).send(messageResponse("success", "Account Verifcation Email has been sent successfully"));
@@ -287,23 +296,25 @@ const verifyEmail = async(req, res, next)=>{
         let email = parseEmailVerificationToken(req.query.token);
 
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 email: email
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
 
         if(!user)
         {
-            throw new createError.NotFound("User with the provided details doesn't exist");
+            throw new createHttpError.NotFound("User with the provided details doesn't exist");
         }
 
+        if(user.dataValues.authStrategy != "local"){
+            throw new createHttpError.BadRequest("Given user is not using local authentication");
+        }
         
         if(user.dataValues.verified){
-            throw new createError.Conflict("User is already verified");
+            throw new createHttpError.Conflict("User is already verified");
         }
 
         user.verified = true;
@@ -358,32 +369,43 @@ const signin = async (req, res, next) => {
                 [Op.like] : user_request.email
             }
         }}).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user){
-            throw new createError.NotFound("User with given email doesn't exist");
+            throw new createHttpError.NotFound("User with given email doesn't exist");
         }
+
+        if(user.dataValues.authStrategy != "local"){
+            throw new createHttpError.BadRequest("Given user is not using local authentication");
+        }
+
         //Check if Password Matches//
-        let isMatch = comparePassword(user_request.password, user.hashedPassword);
+
+        let {hashedPassword} = await Local_Strategy.findOne({where: {
+            userID: user.id
+        }}).catch((error)=>{
+            throw new createHttpError.InternalServerError(error);
+        })
+
+        let isMatch = comparePassword(user_request.password, hashedPassword);
+
         if(!isMatch){
-            throw new createError.Unauthorized("Please provide correct credentials to login");
+            throw new createHttpError.Unauthorized("Please provide correct credentials to login");
         }
-        
-        user.hashedPassword = undefined;
 
         let payload = {
             id: user.dataValues.id,
-            email: user.dataValues.emal
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
         }
 
         let token = getToken(payload);
 
         let refreshToken = getRefreshToken(payload);
 
-
         await Refresh_Token.create({userID: user.id, refreshToken}).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         res.cookie("refreshToken", refreshToken, cookieOptions);
@@ -420,20 +442,17 @@ Success Response:
 const profile = async (req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user)
         {
-            throw new createError.NotFound("User with the given details doesn't exist");
+            throw new createHttpError.NotFound("User with the given details doesn't exist");
         }
-
-        next();
 
         return res.status(200).send(dataResponse("success", {user}));
     }
@@ -458,17 +477,16 @@ Response
 const signout = async(req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user)
         {
-            throw new createError.NotFound("User with the given details doesn't exist");
+            throw new createHttpError.NotFound("User with the given details doesn't exist");
         }
 
         let destroyedToken = await Refresh_Token.destroy({
@@ -476,11 +494,11 @@ const signout = async(req, res, next)=>{
                 "refreshToken": req.signedCookies.refreshToken
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!destroyedToken){
-            throw new createError.NotFound("Provided refresh token doesn't exist");
+            throw new createHttpError.NotFound("Provided refresh token doesn't exist");
         }
 
 
@@ -518,9 +536,9 @@ Response:
 const getAllUsers = async (req, res, next) => {
     try
     {
-        let users = await User.findAll({attributes: {exclude: ['hashedPassword']}}).catch(
+        let users = await User.findAll().catch(
             (error)=> {
-                throw new createError.InternalServerError(error);
+                throw new createHttpError.InternalServerError(error);
             }
         );
         
@@ -556,17 +574,16 @@ Response:
 const getSpecificUser  = async (req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.params.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user)
         {
-            throw new createError.NotFound("User with given details doesn't exist");
+            throw new createHttpError.NotFound("User with given details doesn't exist");
         }
 
         return res.status(200).send(dataResponse("success", {user}));
@@ -591,22 +608,22 @@ refreshToken in Cookie
 const refreshTokenCall = async(req, res, next)=>{
     try {
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user)
         {
-            throw new createError.NotFound("User with given details doesn't exist");
+            throw new createHttpError.NotFound("User with given details doesn't exist");
         }
 
         let payload = {
             id: user.dataValues.id,
-            email: user.dataValues.emal
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy
         }
 
         let token = getToken(payload);
@@ -621,7 +638,7 @@ const refreshTokenCall = async(req, res, next)=>{
                 }
             }
         ).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         })
 
         res.cookie("refreshToken", refreshToken, cookieOptions);
@@ -658,17 +675,16 @@ Response:
 const deleteUser  = async (req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.params.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user)
         {
-            throw new createError.NotFound("User with given details doesn't exist");
+            throw new createHttpError.NotFound("User with given details doesn't exist");
         }
 
         await Refresh_Token.destroy({
@@ -676,7 +692,23 @@ const deleteUser  = async (req, res, next)=>{
                 userID: user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
+        })
+
+        await Local_Strategy.destroy({
+            where:{
+                userID: user.id
+            }
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
+
+        await Oauth_Strategy.destroy({
+            where:{
+                userID: user.id
+            }
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
         })
 
         await Task.destroy({
@@ -684,11 +716,11 @@ const deleteUser  = async (req, res, next)=>{
                 userID: user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         })
 
         await user.destroy().catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         return res.status(200).send(dataResponse("success", {user}));
@@ -733,13 +765,14 @@ const updateUser = async(req, res, next)=>{
     try{
         if(req.body.user.hashedPassword)
             delete req.body.user.hashedPassword
+            delete req.body.user.authStrategy
         
         await User.update(req.body.user, {
             where: {
                 id: req.params.id
             }
         }).catch(error=>{
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
     }
     catch(error)
@@ -766,20 +799,21 @@ Success Response:
 const setPassword = async(req, res, next)=>{
     try{
         let user = await User.findOne({
-            attributes: {exclude: ['hashedPassword']},
             where: {
                 id: req.body.user.id
             }
         }).catch(error => {
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         });
 
         if(!user)
         {
-            throw new createError.NotFound("User with given details doesn't exist");
+            throw new createHttpError.NotFound("User with given details doesn't exist");
         }
 
-
+        if(user.dataValues.authStrategy != "local"){
+            throw new createHttpError.BadRequest("Given user is not using local authentication");
+        }
 
         return res.status(200).send(messageResponse("success", "Your Password has been changed successfully"));
     }
@@ -823,7 +857,7 @@ const addUser = async (req, res, next)=>{
         let user_request = req.body.user;
         //Check if Email is valid or not
         if(!(await emailValidator.validate(user_request.email)).valid){
-            throw new createError.BadRequest("Provided Email is not valid");
+            throw new createHttpError.BadRequest("Provided Email is not valid");
         }
 
         //Check if User Already Exists
@@ -835,21 +869,25 @@ const addUser = async (req, res, next)=>{
         }});
 
         if(user){
-            throw new createError.Conflict("User with current email id already exists");
+            throw new createHttpError.Conflict("User with current email id already exists");
         }
 
 
-        user_request.hashedPassword = generateHash(user_request.password);
+        let hashedPassword = generateHash(user_request.password);
 
         try{
-            user =await User.create(user_request, {fields: ['name', 'email', 'hashedPassword']})
+            user =await User.create(user_request, {fields: ['name', 'email']})
         }
         catch(error){
-            throw new createError.InternalServerError(error);
+            throw new createHttpError.InternalServerError(error);
         }
 
-        user = await User.create(user_request, {fields: ['name', 'email', 'hashedPassword']}).catch(error => {
-            throw new createError.InternalServerError(error);
+        user = await User.create(user_request, {fields: ['name', 'email']}).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        });
+
+        await Local_Strategy.create({userID: user.id, hashedPassword: hashedPassword}).catch(error => {
+            throw new createHttpError.InternalServerError(error);
         });
 
         return res.status(200).send(dataResponse("success", {user}))
@@ -875,16 +913,71 @@ const oauthRedirect = async (req, res, next)=>{
 
 const facebookOAuth = async (req, res, next)=>{
     try{
-        let details = await getFBAccessToken(req.query.code).catch(
+        
+        let accessToken = await getFBAccessToken(req.query.code).catch(
             error=>{
-                throw new createError.InternalServerError(error);
+                throw new createHttpError.InternalServerError(error);
             }
         );
-        console.log(details);
     
-        let userInformation = await getFacebookUserData(details)
-    
-        res.send({userInformation});
+        let {email, first_name, last_name} = await getFacebookUserData(accessToken).catch(
+            error=>{
+                throw new createHttpError.InternalServerError(error);
+            }
+        )
+
+        let name = [first_name, last_name].join(" ");
+
+        //Check if User Already Exists
+        let user = await User.findOne({where: {
+                email: {
+                    [Op.like] : email
+                }
+        }}).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        }
+        );
+
+        if(!user){
+            user = await User.create({name, email, authStrategy: "oauth", verified: true}).catch(
+                (error)=>{
+                    throw new createHttpError.InternalServerError(error);
+                }
+            )
+
+            await Oauth_Strategy.create({userID: user.id, accessToken: accessToken}).catch(error => {
+                throw new createHttpError.InternalServerError(error);
+            });
+        }
+        else{
+            await Oauth_Strategy.update({accessToken: accessToken}, {where: {
+                userID: user.id, 
+            }}).catch(error => {
+                throw new createHttpError.InternalServerError(error);
+            });
+        }
+        
+
+        let payload = {
+            id: user.dataValues.id,
+            email: user.dataValues.email,
+            authStrategy: user.dataValues.authStrategy,
+        }
+
+        let token = getToken(payload);
+
+        let refreshToken = getRefreshToken(payload);
+
+
+        await Refresh_Token.create({userID: user.id, refreshToken}).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        });
+
+        res.cookie("refreshToken", refreshToken, cookieOptions);
+
+        return res.status(200).send(dataResponse("success", {token, user}))
+
+
     }
     catch(error){
         next(error);
