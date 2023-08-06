@@ -50,7 +50,8 @@ const createTask = async (req, res, next) => {
         user.taskNo = user.dataValues.taskNo + 1;
 
         user.save();
-
+        task.save();
+        
         return res.status(200).send(dataResponse("success", task))
 
     }
@@ -61,19 +62,42 @@ const createTask = async (req, res, next) => {
 
 const getAllTasks = async(req, res, next)=>{
     try{
+        tasks = Task.find({
+            where: {
+                userID: req.body.user.id
+            }
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
 
+        return res.status(200).send(dataResponse("success", {tasks}))
     }
     catch(error){
-
+        next(error);
     }
 }
 
 const getTaskById = async(req, res, next)=>{
     try{
+        taskID =  req.params.id;
 
+        task = Task.findOne({
+            where: {
+                userID: req.body.user.id,
+                id: taskID
+            }
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
+        
+        if(task){
+            throw new createHttpError.NotFound(`Task with ${taskID} doesn't belong to your account or it doesn't exist`);
+        }
+
+        return res.status(200).send(dataResponse("success", {task}))
     }
     catch(error){
-        
+        next(error);
     }
 }
 
