@@ -51,7 +51,7 @@ const createTask = async (req, res, next) => {
 
         user.save();
         task.save();
-        
+
         return res.status(200).send(dataResponse("success", task))
 
     }
