@@ -13,11 +13,26 @@ router.post('/sendResetPasswordEmail', userController._sendResetPasswordEmail)
 router.post('/resetPassword', userController.resetPasssword);
 router.post('/setPassword', verifyUser, verifyLocalStrategy, userController.setPassword);
 router.get('/myprofile', verifyUser, userController.profile);
-router.post('/signout', verifyUser, userController.signout);
+router.get('/signout', verifyUser, userController.signout);
 router.get('/refreshTokenCall', verifyRefreshToken, userController.refreshTokenCall);
 //3rd Party Authentication// Getting Information But not Setting In Model Yet.
-router.get('/oauth-redirect/', userController.oauthRedirect);
+//router.get('/oauth-redirect/', userController.oauthRedirect);
 router.get('/facebookauth', userController.facebookOAuth);
+
+/*Task Controller Handler*/
+router.post('/tasks', verifyUser, taskController.createTask);
+
+// Get all tasks for a specific user
+router.get('/tasks', authMiddleware, taskController.getAllTasks);
+
+// Get a specific task by ID
+router.get('/tasks/:id', authMiddleware, taskController.getTaskById);
+
+// Update a task by ID
+router.patch('/tasks/:id', authMiddleware, taskController.updateTask);
+
+// Delete a task by ID
+router.delete('/tasks/:id', authMiddleware, taskController.deleteTask);
 
 /*Unused Handlers are given below*/
 //router.get('/getUsers', userController.getAllUsers);
@@ -27,8 +42,6 @@ router.get('/facebookauth', userController.facebookOAuth);
 //router.post('/', userController.addUser);
 //router.delete('/:id', userController.deleteUser);
 //router.put('/:id', userController.updateUser);
-
-router.get('/createTask', taskController.createTask);
 
 
 module.exports = router;
