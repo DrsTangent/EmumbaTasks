@@ -1,3 +1,4 @@
+
 module.exports = (sequelize, Sequelize) => {
     const Task = sequelize.define("task", {
       id: {
@@ -11,6 +12,7 @@ module.exports = (sequelize, Sequelize) => {
       },
       userID: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
             model: 'Users',
             key: 'id'
@@ -19,7 +21,7 @@ module.exports = (sequelize, Sequelize) => {
       description: {
         type: Sequelize.STRING
       },
-      dueTime: {
+      dueDate: {
         type: Sequelize.DATE,
         allowNull: false
       },
