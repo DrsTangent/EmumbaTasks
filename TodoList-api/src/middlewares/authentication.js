@@ -2,7 +2,7 @@ const createHttpError = require('http-errors')
 const {getPayload, getRefreshTokenPayload} = require('../utils/authentication.js')
 
 const verifyLocalStrategy = (req, res, next) =>{
-  if(!req.body.user.authStrategy == "local")
+  if(!req.user.authStrategy == "local")
   {
     throw new createHttpError.MethodNotAllowed("Given functionality can only be used in Local Authentication Strategy");
   }
@@ -11,7 +11,7 @@ const verifyLocalStrategy = (req, res, next) =>{
 }
 
 const verifyOauthStrategy = (req, res, next) => {
-  if(!req.body.user.authStrategy == "local")
+  if(!req.user.authStrategy == "oauth")
   {
     throw new createHttpError.MethodNotAllowed("Given functionality can only be used in Open Authentication Strategy");
   }
@@ -21,15 +21,11 @@ const verifyOauthStrategy = (req, res, next) => {
 
 const verifyUser = (req,res,next)=>{
     // Check if req.body.user exists, create it if it doesn't
-    if (!req.body.user) {
-      req.body.user = {};
-    }
-
     let payload = getPayload(req);
     
     if(payload){
-        req.body.user.id = payload.id
-        req.body.user.authStrategy = payload.authStrategy
+        req.user.id = payload.id
+        req.user.authStrategy = payload.authStrategy
     }
     else{
       throw new createHttpError.Unauthorized("User is not authentic");
@@ -39,14 +35,10 @@ const verifyUser = (req,res,next)=>{
 
 const verifyRefreshToken = (req, res, next)=>{
     // Check if req.body.user exists, create it if it doesn't
-    if (!req.body.user) {
-      req.body.user = {};
-    }
-
     let payload = getRefreshTokenPayload(req);
 
     if(payload){
-        req.body.user.id = payload.id
+        req.user.id = payload.id
     }
     else{
       throw new createHttpError.Unauthorized("User is not authentic");
