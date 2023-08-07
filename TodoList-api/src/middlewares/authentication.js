@@ -32,8 +32,7 @@ const verifyUser = (req,res,next)=>{
         req.body.user.authStrategy = payload.authStrategy
     }
     else{
-      res.statusCode = 401;
-      res.send({error: "Unauthorized", message:"User is not not authentic"})
+      throw new createHttpError.Unauthorized("User is not authentic");
     }
     next()
 }
@@ -50,8 +49,7 @@ const verifyRefreshToken = (req, res, next)=>{
         req.body.user.id = payload.id
     }
     else{
-      res.statusCode = 401;
-      res.send({error: "Unauthorized", message:"User is not not authentic"})
+      throw new createHttpError.Unauthorized("User is not authentic");
     }
     next()
 }
