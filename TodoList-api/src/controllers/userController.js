@@ -634,7 +634,7 @@ const refreshTokenCall = async(req, res, next)=>{
             {"refreshToken": refreshToken},
             {
                 where:{
-                    "refreshToken": req.body.refreshToken
+                    "refreshToken": req.signedCookies.refreshToken
                 }
             }
         ).catch(error => {
