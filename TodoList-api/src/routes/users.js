@@ -22,7 +22,17 @@ router.get('/facebookauth', userController.facebookOAuth);
 /*Task Controller Handler*/
 router.post('/tasks', verifyUser, taskController.createTask);
 
+// Get all tasks for a specific user
+router.get('/tasks', verifyUser, taskController.getAllTasks);
 
+// Get a specific task by ID
+router.get('/tasks/:id', verifyUser, taskController.getTaskById);
+
+// Update a task by ID
+router.patch('/tasks/:id', verifyUser, taskController.updateTask);
+
+// Delete a task by ID
+router.delete('/tasks/:id', verifyUser, taskController.deleteTask);
 /*Unused Handlers are given below*/
 //router.get('/getUsers', userController.getAllUsers);
 //
