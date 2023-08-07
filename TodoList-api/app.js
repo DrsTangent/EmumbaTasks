@@ -11,11 +11,11 @@ require('dotenv').config();
 
 const db = require("./src/models/index.js");
 //Using Force : True as 
-db.sequelize.sync() 
+db.sequelize.sync({force: true}) 
   .then(() => {
     console.log("Synced db.");
   })
-  .catch((err) => {
+  .catch((err) => { 
     console.log("Failed to sync db: " + err.message);
   });
 
