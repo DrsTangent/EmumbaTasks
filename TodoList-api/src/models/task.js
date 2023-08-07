@@ -30,7 +30,7 @@ module.exports = (sequelize, Sequelize) => {
       },
       completionStatus: {
         type: Sequelize.BOOLEAN,
-        default: false
+        defaultValue: false,
       },
       completionDate: {
         type: Sequelize.DATE
