@@ -168,4 +168,23 @@ const deleteTask = async(req, res, next)=>{
     }
 }
 
-module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask}
+const uploadFile = async (req, res, next) => {
+    try{
+        console.log(req.body.user.id);
+        return res.status(200).send("hello");
+    }
+    catch(error){
+        next(error)
+    }
+}
+
+const deleteFile = async (req, res, next) => {
+    try{
+
+    }
+    catch(error){
+        next(error)
+    }
+}
+
+module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask, uploadFile, deleteFile}

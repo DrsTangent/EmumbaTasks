@@ -2,16 +2,18 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
+var cors = require('cors');
 var {infoLogger} = require('./src/logging/logger');
 var {errorLogger, errorResponder, invalidPathHandler, assignHTTPError} = require('./src/middlewares/errorhandling');
 
 
 require('dotenv').config();
 
+global.__basedir = __dirname;
 
 const db = require("./src/models/index.js");
 //Using Force : True as 
-db.sequelize.sync({force: true}) 
+db.sequelize.sync() 
   .then(() => {
     console.log("Synced db.");
   })
@@ -29,10 +31,10 @@ app.set('view engine', 'jade');
 
 app.use(morgan('combined', {stream: infoLogger.stream}));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(cors({ origin: true, credentials: true }))
 
 app.use('/users', usersRouter);
 
