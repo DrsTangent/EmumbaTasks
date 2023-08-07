@@ -36,11 +36,11 @@ const createTask = async (req, res, next) => {
 
         const {title, description, dueDate} = req.body.task;
         
-        task = await Task.create({
+        let task = await Task.create({
             userID: req.body.user.id,
             title,
             description,
-            dueDate: new Date(dueDate)
+            dueDate: new Date(dueDate),
         }).catch(
             (error)=>{
                 throw new createHttpError.InternalServerError(error);
@@ -62,7 +62,7 @@ const createTask = async (req, res, next) => {
 
 const getAllTasks = async(req, res, next)=>{
     try{
-        tasks = Task.find({
+        let tasks = await Task.findAll({
             where: {
                 userID: req.body.user.id
             }
@@ -79,9 +79,9 @@ const getAllTasks = async(req, res, next)=>{
 
 const getTaskById = async(req, res, next)=>{
     try{
-        taskID =  req.params.id;
+        let taskID =  req.params.id;
 
-        task = Task.findOne({
+        let task = await Task.findOne({
             where: {
                 userID: req.body.user.id,
                 id: taskID
@@ -90,7 +90,7 @@ const getTaskById = async(req, res, next)=>{
             throw new createHttpError.InternalServerError(error);
         })
         
-        if(task){
+        if(!task){
             throw new createHttpError.NotFound(`Task with ${taskID} doesn't belong to your account or it doesn't exist`);
         }
 
@@ -103,29 +103,69 @@ const getTaskById = async(req, res, next)=>{
 
 const updateTask = async(req, res, next)=>{
     try{
+        let taskID =  req.params.id;
+        // {id, title, userID, description, dueDate, filePath, completionStatus, completionDate}
 
+        const {title, description, dueDate, completionStatus, completionDate} = req.body.task;
+
+        let task = await Task.findOne(
+            {
+            where: {
+                userID: req.body.user.id,
+                id: taskID
+            }
+            }
+        ).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
+        
+        if(!task){
+            throw new createHttpError.NotFound(`Task with ${taskID} doesn't belong to your account or it doesn't exist`);
+        }
+
+        await task.update({
+            userID: req.body.user.id,
+            title,
+            description,
+            dueDate: new Date(dueDate),
+            completionStatus,
+            completionDate
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        });
+
+        return res.status(200).send(dataResponse("success", {task}))
     }
     catch(error){
-        
+        next(error);
     }
 }
 
 const deleteTask = async(req, res, next)=>{
     try{
+        let taskID =  req.params.id;
+        // {id, title, userID, description, dueDate, filePath, completionStatus, completionDate}
 
+        let task = await Task.destroy(
+            {
+            where: {
+                userID: req.body.user.id,
+                id: taskID
+            }
+            }
+        ).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
+
+        if(!task){
+            throw new createHttpError.NotFound(`Task with ${taskID} doesn't belong to your account or it doesn't exist`);
+        }
+
+        return res.status(200).send(messageResponse("success", `Task with task id ${taskID} has been deleted successfully`));
     }
     catch(error){
-        
+        next(error);
     }
 }
 
-const attachFile = async(req, res, next)=>{
-    try{
-
-    }
-    catch(error){
-        
-    }
-}
-
-module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask, attachFile}
+module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask}
