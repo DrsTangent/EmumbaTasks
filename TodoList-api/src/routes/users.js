@@ -22,13 +22,13 @@ router.get('/refreshTokenCall', verifyRefreshToken, userController.refreshTokenC
 router.get('/facebookauth', userController.facebookOAuth);
 
 /*Task Controller Handler*/
-router.post('/tasks/:id/file', uploadFile.single("file"), verifyUser,  taskController.uploadFile);// upload an attachment
+router.post('/tasks/:id/file', verifyUser, uploadFile.single("file"),  taskController.uploadFile);// upload an attachment
 router.post('/tasks', verifyUser, taskController.createTask);//Create Task
 router.get('/tasks', verifyUser, taskController.getAllTasks);// Get all tasks for a specific user
 router.get('/tasks/:id', verifyUser, taskController.getTaskById);// Get a specific task by ID
 router.patch('/tasks/:id', verifyUser, taskController.updateTask);// Update a task by ID
 router.delete('/tasks/:id', verifyUser, taskController.deleteTask);// Delete a task by ID
-router.delete('/tasks/:id/file/:filename', verifyUser, taskController.deleteFile); // delete an attachment
+router.delete('/tasks/:id/file/', verifyUser, taskController.deleteFile); // delete an attachment
 /*Unused Handlers are given below*/
 //router.get('/getUsers', userController.getAllUsers);
 //

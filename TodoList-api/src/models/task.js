@@ -25,8 +25,8 @@ module.exports = (sequelize, Sequelize) => {
         type: Sequelize.DATE,
         allowNull: false
       },
-      filePath: {
-        type: Sequelize.DATE,
+      fileUrl: {
+        type: Sequelize.STRING,
       },
       completionStatus: {
         type: Sequelize.BOOLEAN,

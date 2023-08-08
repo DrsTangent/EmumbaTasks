@@ -24,8 +24,7 @@ const verifyUser = (req,res,next)=>{
     let payload = getPayload(req);
     
     if(payload){
-        req.user.id = payload.id
-        req.user.authStrategy = payload.authStrategy
+        req.user = {id: payload.id, authStrategy: payload.authStrategy};
     }
     else{
       throw new createHttpError.Unauthorized("User is not authentic");
@@ -38,7 +37,7 @@ const verifyRefreshToken = (req, res, next)=>{
     let payload = getRefreshTokenPayload(req);
 
     if(payload){
-        req.user.id = payload.id
+      req.user = {id: payload.id};
     }
     else{
       throw new createHttpError.Unauthorized("User is not authentic");

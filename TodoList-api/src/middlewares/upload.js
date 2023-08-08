@@ -9,7 +9,7 @@ const createDirIfNotExists = dir =>
 let storage = multer.diskStorage({
   destination: (req, file, cb) => {
     console.log(req.body)
-    let dir = __basedir + `/public/uploads/users/1/tasks/${req.params.id}/`;
+    let dir = __basedir + `/public/uploads/users/${req.user.id}/tasks/${req.params.id}/`;
     createDirIfNotExists(dir);
     cb(null, dir);
   },
