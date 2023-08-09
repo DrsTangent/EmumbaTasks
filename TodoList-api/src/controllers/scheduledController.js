@@ -67,6 +67,9 @@ function tasksEmailTemplate(user){
             color: #333;
             font-weight: bold;
         }
+        .footer > * {
+            margin: 0px 0px 5px 0px
+        }
         </style>
     </head>
     <body>
@@ -75,7 +78,16 @@ function tasksEmailTemplate(user){
         <p>Hi there ${user.name}, Here is a reminder of tasks with due date of ${(new Date()).toISOString().split('T')[0]}</p>
 
         ${htmlTasks}
-    </body>
+        --
+        <div class = "footer">
+            <p>Emumba To Do List</p>
+            <p>Phone: 0514444711 | <a href="www.emumba.com">www.emumba.com</a></p>
+            <img width="50" height="50" src="https://media.licdn.com/dms/image/C4E0BAQHFtaC0KvPMZw/company-logo_200_200/0/1564645364375?e=2147483647&v=beta&t=zTaN3NPsqHC9nFeMQHpZpXwGB7g3cj3cRXmcnzlbtHE" alt="Company Logo" />
+            <p>Office: Plot # 189-A, Korang Road, I-10/3, Islamabad.</p>
+            <p>Linkedin | Facebook | Twitter</p>
+        </div>
+        
+        </body>
     </html>
     `
 }
