@@ -95,9 +95,17 @@ const getTaskById = async(req, res, next)=>{
 const updateTask = async(req, res, next)=>{
     try{
         let taskID =  req.params.id;
-        // {id, title, userID, description, dueDate, filePath, completionStatus, completionDate}
 
-        const {title, description, dueDate, completionStatus, completionDate} = req.body.task;
+        //These property shall not be updated by the user//
+        delete req.body.task.id;
+        delete req.body.task.userID;
+        delete req.body.task.filePath
+
+        if(req.body.task.dueDate)
+            req.body.task.dueDate = new Date (req.body.task.dueDate);
+        
+        if(req.body.task.dueDate)
+            req.body.task.dueDate = new Date (req.body.task.dueDate);
 
         let task = await Task.findOne(
             {
@@ -115,12 +123,7 @@ const updateTask = async(req, res, next)=>{
         }
 
         await task.update({
-            userID: req.user.id,
-            title,
-            description,
-            dueDate: new Date(dueDate),
-            completionStatus,
-            completionDate
+            ...req.body.task
         }).catch(error => {
             throw new createHttpError.InternalServerError(error);
         });

@@ -39,7 +39,7 @@ const errorLogger = (error, req, res, next) => {
         ip
     })
     
-    console.log(error.status);
+    console.log(error);
 
     next(error) // calling next middleware
 }
