@@ -27,6 +27,7 @@ module.exports = (sequelize, Sequelize) => {
       },
       fileUrl: {
         type: Sequelize.STRING,
+        defaultValue: null
       },
       completionStatus: {
         type: Sequelize.BOOLEAN,

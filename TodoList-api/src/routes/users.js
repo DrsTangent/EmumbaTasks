@@ -5,6 +5,7 @@ var taskController = require('../controllers/taskController')
 var userController = require('../controllers/userController')
 const {verifyUser, verifyRefreshToken, verifyLocalStrategy} = require('../middlewares/authentication')
 const {uploadFile} = require('../middlewares/upload')
+const scheduledController = require('../controllers/scheduledController');
 
 /*User Controller Handlers*/
 router.post('/signup', userController.signup);
@@ -29,6 +30,7 @@ router.get('/tasks/:id', verifyUser, taskController.getTaskById);// Get a specif
 router.patch('/tasks/:id', verifyUser, taskController.updateTask);// Update a task by ID
 router.delete('/tasks/:id', verifyUser, taskController.deleteTask);// Delete a task by ID
 router.delete('/tasks/:id/file/', verifyUser, taskController.deleteFile); // delete an attachment
+router.get('/test', scheduledController.sendReminder);
 /*Unused Handlers are given below*/
 //router.get('/getUsers', userController.getAllUsers);
 //

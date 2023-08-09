@@ -36,6 +36,8 @@ app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({ origin: true, credentials: true }))
 
+require('./src/middlewares/schedule-tasks').start();
+
 app.use('/users', usersRouter);
 
 

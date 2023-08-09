@@ -25,4 +25,6 @@ db.refreshTokens = require("./refreshToken.js")(sequelize, Sequelize);
 db.oauthStrategy = require("./oauthStrategy.js")(sequelize, Sequelize);
 db.localStrategy = require("./localStrategy.js")(sequelize, Sequelize);
 
+db.users.hasMany(db.tasks, {foreignKey: 'userID'});
+
 module.exports = db;
