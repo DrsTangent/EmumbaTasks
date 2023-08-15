@@ -38,7 +38,7 @@ const getAverageTasksCompletion = async(req, res, next) => {
         let userId = req.user.id;
 
         let user = await User.findOne({
-            attributes: ['name', 'email', 'createdAt'],
+            attributes: ['name', 'email', 'createdAt',[sequelize.fn('COUNT', sequelize.col('tasks.userID')), "completedTasksNo"]],
             where: {
                 id: userId
             },
@@ -49,17 +49,16 @@ const getAverageTasksCompletion = async(req, res, next) => {
                 },
                 //attributes: [sequelize.fn('COUNT', sequelize.col('tasks.id')), 'totalCompletedTasksNo']
             },
-            having: sequelize.fn('COUNT', sequelize.col('tasks.id'))
+            group: ['tasks.userID']
         }).catch((error) => {
             throw new createHttpError.InternalServerError(error);
         })
-
-        let totalTasks = user.tasks.length;
+        
         let toDayUnix = new Date().getTime();
         let createdUserUnix = new Date(user.createdAt).getTime()
         let miliSecTimeDiff = toDayUnix - createdUserUnix;
         let dayTimeDiff = miliSecTimeDiff/(1000*60*60*24);
-        let averageTasksPerDay = totalTasks/dayTimeDiff;
+        let averageTasksPerDay = user.dataValues.completedTasksNo/dayTimeDiff;
 
         console.log(totalTasks, dayTimeDiff);
         res.status(200).send(dataResponse("success", {averageTasksPerDay}))
@@ -111,35 +110,25 @@ const getMaximumTasksCompletionDate = async(req, res, next) => {
     try{
         let userId = req.user.id;
 
-        let tasks = await Task.findAll({
+        let tasks = await Task.findOne({
             where: {
                 userID: userId,
                 completionDate: {[Op.not]: null}
             },
             attributes:[
-                [sequelize.fn('date', sequelize.col('completionDate')), "completionDate"]
-            ]
+                [sequelize.fn('date', sequelize.col('completionDate')), "completionDateOnly"], 
+                [sequelize.fn('COUNT', sequelize.col('id')), "totalTasksCompleted"],
+            ],
+            group: ["completionDateOnly"],
+            order: [
+                [sequelize.literal('totalTasksCompleted'), 'DESC']
+            ],
+            limit: 1
         }).catch((error)=>{
             throw new createHttpError.InternalServerError(error);
         });
 
-        let tasksDone = {};
-
-        let maxTasksDate = null;
-
-        //Assign Completed Tasks Acccording to it's date//
-        for(task of tasks){
-            if(tasksDone[task.completionDate])
-                tasksDone[task.completionDate] = tasksDone[task.completionDate] + 1;
-            else
-                tasksDone[task.completionDate] = 1
-            
-            //Getting Maximum tasks
-            if(!maxTasksDate || tasksDone[maxTasksDate] < tasksDone[task.completionDate])
-                maxTasksDate = task.completionDate;
-        }
-
-        return res.status(200).send(dataResponse("success", {maxTasksDate, tasksNo: tasksDone[maxTasksDate]}));
+        return res.status(200).send(dataResponse("success", {...tasks.dataValues}));
 
     }
     catch(error){
@@ -155,50 +144,16 @@ const getTasksCreatedDayWise = async(req, res, next) => {
             where: {
                 userID: userId
             },
-            attributes:["createdAt"]
+            attributes:[
+                [sequelize.fn('dayname', sequelize.col('createdAt')), 'createdDay'],
+                [sequelize.fn('count', sequelize.col('id')), 'tasksNo']
+            ],
+            group:['createdDay']
         }).catch((error)=>{
             throw new createHttpError.InternalServerError(error);
         });
-        
-        tasksCompletion = {
-            "Mon": 0,
-            "Tue": 0,
-            "Wed": 0,
-            "Thu": 0,
-            "Fri": 0,
-            "Sat": 0,
-            "Sun": 0
-        };
 
-        for(task of tasks){
-            day = new Date(task.createdAt).getDay();
-            
-            switch(day){
-                case 0:
-                    tasksCompletion["Sun"] = tasksCompletion["Sun"] + 1;
-                    break;
-                case 1:
-                    tasksCompletion["Mon"] = tasksCompletion["Mon"] + 1;
-                    break;
-                case 2:
-                    tasksCompletion["Tue"] = tasksCompletion["Tue"] + 1;
-                    break;
-                case 3:
-                    tasksCompletion["Wed"] = tasksCompletion["Wed"] + 1;
-                    break;
-                case 4:
-                    tasksCompletion["Thu"] = tasksCompletion["Thu"] + 1;
-                    break;
-                case 5:
-                    tasksCompletion["Fri"] = tasksCompletion["Fri"] + 1;
-                    break;
-                case 6:
-                    tasksCompletion["Sat"] = tasksCompletion["Sat"] + 1;
-                    break;
-            }
-        }
-
-        return res.status(200).send(dataResponse("success", {tasksCompletion}))
+        return res.status(200).send(dataResponse("success", {tasks}))
     }
     catch(error){
         next(error)
