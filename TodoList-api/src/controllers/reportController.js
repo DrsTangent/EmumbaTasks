@@ -46,8 +46,10 @@ const getAverageTasksCompletion = async(req, res, next) => {
                 model: Task,
                 where: {
                     completionStatus: true
-                }
-            }
+                },
+                //attributes: [sequelize.fn('COUNT', sequelize.col('tasks.id')), 'totalCompletedTasksNo']
+            },
+            having: sequelize.fn('COUNT', sequelize.col('tasks.id'))
         }).catch((error) => {
             throw new createHttpError.InternalServerError(error);
         })
@@ -71,33 +73,33 @@ const getMissedDeadlineTasks = async(req, res, next) => {
     try{
         let userId = req.user.id;
 
-        let tasks = await Task.findAll({
+        let missedTaks = await Task.findAll({
             where: {
-                userID: userId
+                [Op.and]: [
+                    {
+                        userID: userId
+                    },
+                    {
+                        [Op.or]:[
+                            {[Op.and] : [
+                                {completionStatus: true},
+                                {completionDate: {[Op.gt]: sequelize.col('dueDate')}}
+                            ]},
+                            {[Op.and] : [
+                                {completionStatus: false},
+                                {dueDate: {[Op.lt]: new Date()}}
+                            ]},
+                        ]
+                    }
+                ]
             }
         }).catch((error)=>{
             throw new createHttpError.InternalServerError(error);
         });
 
-        let missedDeadlineTasks = 0;
+        let missedTasksNo = missedTaks.length;
 
-        for(task of tasks){
-            let dueDate = new Date(task.dueDate);
-            if(tasks.completionDate){
-                let completionDate = new Date(tasks.completionDate);
-                if(completionDate > dueDate)
-                    missedDeadlineTasks++;
-            }
-            else
-            {
-                let dateNow = new Date();
-                if(dueDate < dateNow){
-                    missedDeadlineTasks++;
-                }
-            }
-        }
-
-        res.status(200).send(dataResponse("success", {missedDeadlineTasks}))
+        res.status(200).send(dataResponse("success", {missedTasksNo, missedTaks}))
 
     }
     catch(error){
