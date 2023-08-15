@@ -2,10 +2,12 @@ const db = require('../models/index');
 const createHttpError = require('http-errors');
 const User = db.users;
 const Task = db.tasks;
+const Op = db.Sequelize.Op;
 const {messageResponse, dataResponse} = require('../utils/commonResponse');
 const MAX_TASK_LIMIT = 50;
 const fs = require("fs");
 const { filePathToFileUrl, fileUrlToFilePath } = require('../utils/fileHandling');
+const { addStringQuery, addDateQuery, addBooleanQuery } = require('../utils/query');
 
 const createTask = async (req, res, next) => {
     try{
@@ -50,12 +52,28 @@ const createTask = async (req, res, next) => {
         next(error);
     }
 }
+/*{title, dueDate, completionStatus, completionDate, description}*/
 
 const getAllTasks = async(req, res, next)=>{
     try{
+        //Filtering//
+        let sqlQuery = {};
+        let query = req.query;
+        addStringQuery('title', sqlQuery, query);
+        addDateQuery('dueDate', sqlQuery, query);
+        addBooleanQuery('completionStatus', sqlQuery, query);
+        addDateQuery('completionDate', sqlQuery, query);
+        addStringQuery('description', sqlQuery, query);
+        //Pagination//
+        let limit = parseInt(req.query.limit) || 2;
+        let offset = parseInt(req.query.offset) || 0
+        
         let tasks = await Task.findAll({
+            limit,
+            offset,
             where: {
-                userID: req.user.id
+                userID: req.user.id,
+                ...sqlQuery
             }
         }).catch(error => {
             throw new createHttpError.InternalServerError(error);
