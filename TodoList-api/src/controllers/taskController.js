@@ -278,4 +278,42 @@ const deleteFile = async (req, res, next) => {
     }
 }
 
-module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask, uploadFile, deleteFile}
+function areTasksSimilar(taskA, taskB) {
+    const wordsA = taskA.split(' ');
+    const wordsB = taskB.split(' ');
+    
+    return wordsA.every(val => wordsB.includes(val)) || wordsB.every(val => wordsA.includes(val));
+}
+
+const getSimilarTasks = async (req, res, next)=>{
+    try{
+        let tasks = await Task.findAll({
+            where: {
+                userID: req.user.id
+            }
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
+
+        similarTasks = {};
+
+        // Example usage
+        for(let i = 0; i<tasks.length; i++){
+            for(let j = i+1; j<tasks.length; j++){
+                if(areTasksSimilar(tasks[i].title, tasks[i].title)){
+                    if(similarTasks[tasks[i].id])
+                        similarTasks[tasks[i].id].push(tasks[j].id)
+                    else
+                        similarTasks[tasks[i].id] = [tasks[j].id]
+                }
+            }
+        }
+
+        return res.status(200).send(dataResponse("success", {similarTasks}))
+    }
+    catch(error){
+        next(error);
+    }
+}
+
+module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask, uploadFile, deleteFile, getSimilarTasks}
