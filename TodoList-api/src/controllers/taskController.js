@@ -8,6 +8,7 @@ const MAX_TASK_LIMIT = 50;
 const fs = require("fs");
 const { filePathToFileUrl, fileUrlToFilePath } = require('../utils/fileHandling');
 const { addStringQuery, addDateQuery, addBooleanQuery } = require('../utils/query');
+const { getSimilarTasksService } = require('../services/tasksServices');
 
 const createTask = async (req, res, next) => {
     try{
@@ -278,4 +279,23 @@ const deleteFile = async (req, res, next) => {
     }
 }
 
-module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask, uploadFile, deleteFile}
+const getSimilarTasks = async (req, res, next)=>{
+    try{
+        let tasks = await Task.findAll({
+            where: {
+                userID: req.user.id
+            }
+        }).catch(error => {
+            throw new createHttpError.InternalServerError(error);
+        })
+
+        let similarTasks = getSimilarTasksService(tasks);
+
+        return res.status(200).send(dataResponse("success", {similarTasks}))
+    }
+    catch(error){
+        next(error);
+    }
+}
+
+module.exports = {createTask, getAllTasks, getTaskById, updateTask, deleteTask, uploadFile, deleteFile, getSimilarTasks}
