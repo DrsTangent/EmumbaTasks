@@ -7,7 +7,15 @@
 var app = require('../app');
 var debug = require('debug')('todolist-api:server');
 var http = require('http');
+const db = require("./../src/models");
 
+db.sequelize.sync() 
+  .then(() => {
+    console.log("Synced db.");
+  })
+  .catch((err) => { 
+    console.log("Failed to sync db: " + err.message);
+});
 /**
  * Get port from environment and store in Express.
  */

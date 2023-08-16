@@ -10,17 +10,7 @@ var {errorLogger, errorResponder, invalidPathHandler, assignHTTPError} = require
 require('dotenv').config();
 
 global.__basedir = __dirname;
-
-const db = require("./src/models/index.js");
-//Using Force : True as 
-db.sequelize.sync() 
-  .then(() => {
-    console.log("Synced db.");
-  })
-  .catch((err) => { 
-    console.log("Failed to sync db: " + err.message);
-  });
-
+  
 var usersRouter = require('./src/routes/users');
 
 var app = express();

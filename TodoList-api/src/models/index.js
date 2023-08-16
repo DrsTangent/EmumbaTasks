@@ -10,8 +10,8 @@ const sequelize = new Sequelize(process.env.DB, process.env.DB_USER, process.env
         min: dbConfig.pool.min,
         acquire: dbConfig.pool.acquire,
         idle: dbConfig.pool.idle
-    }
-
+    },
+    logging: dbConfig.logging
 })
 
 const db = {}

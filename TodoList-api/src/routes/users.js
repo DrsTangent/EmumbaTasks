@@ -44,7 +44,7 @@ router.get('/report/getTasksCreatedDayWise', verifyUser, reportController.getTas
 router.get('/test', scheduledController.sendReminder);
 
 /*Unused Handlers are given below*/
-//router.get('/getUsers', userController.getAllUsers);
+router.get('/getUsers', userController.getAllUsers);
 //router.get('/:id', userController.getSpecificUser);
 //router.get('/', userController.getAllUsers);
 //router.post('/', userController.addUser);
