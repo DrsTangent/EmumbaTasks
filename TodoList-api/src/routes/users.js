@@ -26,6 +26,7 @@ router.get('/facebookauth', userController.facebookOAuth);
 
 /*Task Controller Handler*/
 
+router.get('/tasks/getSimilarTasks', verifyUser, taskController.getSimilarTasks)
 router.post('/tasks/:id/file', verifyUser, uploadFile.single("file"),  taskController.uploadFile);// upload an attachment
 router.post('/tasks', verifyUser, taskController.createTask);//Create Task
 router.get('/tasks', verifyUser, taskController.getAllTasks);// Get all tasks for a specific user
